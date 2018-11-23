@@ -1,12 +1,14 @@
 """
 Setup functions for HTTP server.
 """
+from typing import Awaitable
 
 import aiohttp_cors
+from aiohttp import web
 
 from app.infrastructure.server.http.handlers import health
-from app.infrastructure.server.http.errors import ERROR_HANDLERS
 
+RUNNING_TASKS = "running_tasks"
 
 HEALTH = "/health"
 INFO = "/info"
@@ -47,3 +49,14 @@ def register_dependency(app, constant_key, dependency, usecase=None):
         if constant_key not in app:
             app[constant_key] = {}
         app[constant_key][usecase] = dependency
+
+
+def register_task(app: web.Application, coro: Awaitable):
+    """Register a background task with the aiohttp app.
+    """
+
+    if RUNNING_TASKS not in app:
+        app[RUNNING_TASKS] = []
+
+    task = app.loop.create_task(coro)
+    app[RUNNING_TASKS].append(task)
