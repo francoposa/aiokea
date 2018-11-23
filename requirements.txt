@@ -1,0 +1,12 @@
+aiohttp==3.4.4
+aiohttp-cors==0.7.0
+appdirs==1.4.3
+async-timeout==3.0.0
+attrs==18.2.0
+black==18.9b0
+chardet==3.0.4
+Click==7.0
+idna==2.7
+multidict==4.4.2
+toml==0.10.0
+yarl==1.2.6
