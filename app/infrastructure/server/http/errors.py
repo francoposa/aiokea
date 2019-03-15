@@ -7,7 +7,9 @@ import json
 from aiohttp import web
 
 
-async def api_error_handler(request: web.Request, response: web.Response) -> web.Response:
+async def api_error_handler(
+    request: web.Request, response: web.Response
+) -> web.Response:
     """Provide an API-friendly error message.
     The body can either be a simple text message, in which case it is sent as the "message" field.
     Otherwise the body is JSON-encoded data containing two fields:
@@ -26,7 +28,11 @@ async def api_error_handler(request: web.Request, response: web.Response) -> web
 
     except (json.JSONDecodeError, ValueError):
         return web.json_response(
-            {"success": False, "status": response.status, "message": response.text.rstrip(".")},
+            {
+                "success": False,
+                "status": response.status,
+                "message": response.text.rstrip("."),
+            },
             status=response.status,
         )
 
