@@ -5,6 +5,7 @@ from aiohttp import web
 
 from app.infrastructure.server import http
 
+
 def on_startup(conf: Mapping):
     """Return a startup handler that will perform background tasks"""
 
@@ -17,6 +18,7 @@ def on_startup(conf: Mapping):
         pass
 
     return startup_handler
+
 
 def main():
     app = web.Application()
