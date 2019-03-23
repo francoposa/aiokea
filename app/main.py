@@ -2,6 +2,7 @@ import os
 from typing import Mapping
 
 from aiohttp import web
+from aiopg.sa import create_engine
 
 from app.infrastructure.server import http
 
@@ -15,7 +16,7 @@ def on_startup(conf: Mapping):
         These are tasks that should be run after the event loop has been started but before the HTTP
         server has been started.
         """
-        pass
+        pg_engine = await create_engine(**conf["postgres"])
 
     return startup_handler
 

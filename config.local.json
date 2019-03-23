@@ -1,0 +1,13 @@
+{
+    "postgres": {
+        "host": "127.0.0.1",
+        "port": 5432,
+        "user": "postgres",
+        "password": "postgres",
+        "database": "aiohttp-crud",
+        "minsize": 1,
+        "maxsize": 10,
+        "echo": true,
+        "timeout": 60
+    }
+}
