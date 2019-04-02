@@ -37,7 +37,7 @@ db_arg = context.get_x_argument(as_dictionary=True).get("db", None)
 if db_arg:
     postgres_dbname = db_arg
 else:
-    postgres_dbname = getenv("POSTGRES_DB", "cc-postgres-march")
+    postgres_dbname = getenv("POSTGRES_DB", "aiohttp_crud")
 
 url = "postgres://{0}:{1}@{2}:{3}/{4}".format(
     postgres_user, postgres_password, postgres_host, postgres_port, postgres_dbname
