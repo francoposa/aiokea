@@ -4,7 +4,7 @@
         "port": 5432,
         "user": "postgres",
         "password": "postgres",
-        "database": "aiohttp-crud",
+        "database": "aiohttp_crud",
         "minsize": 1,
         "maxsize": 10,
         "echo": true,
