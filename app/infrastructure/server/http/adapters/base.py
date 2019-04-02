@@ -1,3 +1,5 @@
+from typing import Mapping
+
 import attr
 from marshmallow import Schema, ValidationError
 
@@ -13,9 +15,9 @@ class BaseJSONUsecaseAdapter:
         """Return a UsecaseClass() from an HTTP Request."""
 
         try:
-            usecase_dict = self.post_schema.load(mapping).data
+            usecase_data: Mapping = self.post_schema.load(mapping).data
         except ValidationError as e:
             # TODO see what this error looks like, get useful info out, and re-raise as as a different error
             pass
 
-        return self.UsecaseClass(**usecase_dict)
+        return self.UsecaseClass(**usecase_data)
