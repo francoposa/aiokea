@@ -1,5 +1,5 @@
 # aiohttp-postgres
-#####Basic CRUD app framework utilizing Clean Architecture concepts of Infrastructure, Usecases, and Adapters
+Basic CRUD app framework utilizing Clean Architecture concepts of Infrastructure, Usecases, and Adapters
 
 Asyncio Python utilizing the following libraries:
 * aiohttp: small async web framework
