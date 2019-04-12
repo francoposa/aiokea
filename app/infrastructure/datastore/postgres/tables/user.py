@@ -1,5 +1,3 @@
-"""User table"""
-
 import sqlalchemy as sa
 
 from app.infrastructure.datastore.postgres.tables.metadata import METADATA

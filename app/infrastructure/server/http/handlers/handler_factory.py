@@ -1,14 +1,13 @@
 import asyncio
 from aiohttp import web
 
-"""This is the most opinionated part of the skeleton app
-
+"""
 Our adapters provide generalized methods for marshaling and un-marshaling objects
 and our database clients provide the same generality for database CRUD operations.
 The handler is the only skeleton functionality that dictates when and how we use 
 the those adapters and clients, and is the only place where web requests and
 database operations are explicitly tied together
-Of course, it's also what makes the skeleton just *work* out of the box.
+This is what makes the skeleton just *work* out of the box.
 """
 
 

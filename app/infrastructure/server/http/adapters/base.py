@@ -16,8 +16,7 @@ class BaseJSONUsecaseAdapter:
 
         try:
             usecase_data: Mapping = self.post_schema.load(mapping).data
+            return self.UsecaseClass(**usecase_data)
         except ValidationError as e:
             # TODO see what this error looks like, get useful info out, and re-raise as as a different error
             pass
-
-        return self.UsecaseClass(**usecase_data)
