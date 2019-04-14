@@ -34,10 +34,12 @@ def _setup_routes(app):
     app.router.add_get(INFO, health.info)
 
 
-def configure_app(app):
+def configure_app(app: web.Application, startup_handler):
     """Configure the web.Application."""
 
     _setup_routes(app)
+    # Schedule custom startup routine.
+    app.on_startup.append(startup_handler)
 
 
 def register_dependency(app, constant_key, dependency, usecase=None):
