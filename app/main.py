@@ -30,12 +30,13 @@ def on_startup(conf: Mapping):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--config", help="Configuration file")
+    parser.add_argument("-c", "--config", help="Config file")
     args = parser.parse_args()
 
     # Load config.
     with open(args.config, "r") as conf_file:
         conf = json.load(conf_file)
+
     app = web.Application()
     http.configure_app(app, on_startup(conf))
     port = int(os.environ.get("PORT", 8080))
