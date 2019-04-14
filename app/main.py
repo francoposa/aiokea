@@ -22,7 +22,7 @@ def on_startup(conf: Mapping):
         """
         pg_engine = await create_engine(**conf["postgres"])
         user_pg_client = UserPostgresClient(pg_engine)
-        user = User(username="sup", email="yeet@sup.com")
+        user = User(username="admin", email="admin@root.com")
         print(await user_pg_client.insert(user))
 
     return startup_handler

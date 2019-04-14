@@ -20,7 +20,7 @@ async def engine() -> Engine:
 
 
 @pytest.fixture
-async def user_repo(engine):
+async def user_pg_client(engine):
     pg = postgres.UserPostgresClient(engine)
     yield pg
     pg.engine.close()
@@ -28,7 +28,7 @@ async def user_repo(engine):
 
 
 @pytest.fixture
-async def db(loop, engine, user_repo):
+async def db(loop, engine, user_pg_client):
 
     tables = ["users"]
 
@@ -36,7 +36,7 @@ async def db(loop, engine, user_repo):
         async with engine.acquire() as conn:
             await conn.execute("TRUNCATE TABLE {0} CASCADE".format(table))
 
-    await setup_db(user_repo)
+    await setup_db(user_pg_client)
     yield
 
     for table in tables:

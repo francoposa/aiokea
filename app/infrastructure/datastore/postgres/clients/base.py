@@ -33,9 +33,13 @@ class BasePostgresClient:
             return await result.fetchone()
 
     def _serialize_for_db(self, usecase) -> Dict:
+        # at this point we're assuming attrs classes for usecases
         usecase_dict: Dict = attr.asdict(usecase)
         for db_generated_field in self.db_generated_fields:
             if usecase_dict.get(db_generated_field) is None:
+                # inserting a non-nullable field with value None will result in a
+                # psycopg2.IntegrityError: null value in column violates not-null constraint
+                # we delete the value from the dict instead
                 del usecase_dict[db_generated_field]
         for k, v in usecase_dict.items():
             if isinstance(v, datetime.datetime):
