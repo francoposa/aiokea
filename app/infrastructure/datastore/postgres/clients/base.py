@@ -1,7 +1,8 @@
 import datetime
-from typing import Iterable, Dict
+from typing import Dict, Iterable, Mapping
 
 import attr
+
 import aiopg.sa
 import sqlalchemy as sa
 from aiopg.sa.result import ResultProxy
@@ -20,6 +21,14 @@ class BasePostgresClient:
         self.engine = engine
         self.table = table
         self.db_generated_fields = db_generated_fields or ["created_at", "updated_at"]
+
+    async def where(self, inclusion_map: Mapping = None, exclusion_map: Mapping = None):
+        pass
+
+    def _generate_where_clause(
+        self, inclusion_map: Mapping = None, exclusion_map: Mapping = None
+    ):
+        pass
 
     async def insert(self, usecase):
         serialized_usecase: Dict = self._serialize_for_db(usecase)
