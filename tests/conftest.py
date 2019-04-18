@@ -4,7 +4,7 @@ import pytest
 from aiopg.sa import create_engine, Engine
 
 from app.infrastructure.datastore import postgres
-from tests.db_setup import setup_db
+import tests.db_setup as db_setup
 
 
 @pytest.fixture
@@ -36,7 +36,7 @@ async def db(loop, engine, user_pg_client):
         async with engine.acquire() as conn:
             await conn.execute("TRUNCATE TABLE {0} CASCADE".format(table))
 
-    await setup_db(user_pg_client)
+    await db_setup.setup_db(user_pg_client)
     yield
 
     for table in tables:
