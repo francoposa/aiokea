@@ -4,4 +4,4 @@ async def test_generate_where_clause(db, user_pg_client):
         exclusion_map={"email": ["ejectoseat@fastnfurious.com"]},
     )
     print(results)
-    assert false
+    assert False
