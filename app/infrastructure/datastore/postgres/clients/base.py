@@ -12,6 +12,8 @@ from sqlalchemy.sql.selectable import Select
 from sqlalchemy.sql import select, and_, not_
 from sqlalchemy.sql.schema import Column
 
+DEFAULT_PAGE_SIZE = 100
+
 
 class BasePostgresClient:
     def __init__(
@@ -26,11 +28,19 @@ class BasePostgresClient:
         self.table = table
         self.db_generated_fields = db_generated_fields or ["created_at", "updated_at"]
 
-    async def where(self, inclusion_map: Mapping = None, exclusion_map: Mapping = None):
+    async def where(
+        self,
+        inclusion_map: Mapping = None,
+        exclusion_map: Mapping = None,
+        page=0,
+        page_size=None,
+    ):
         where_clause = self._generate_where_clause(inclusion_map, exclusion_map)
+        page_size = page_size if page_size else DEFAULT_PAGE_SIZE
         async with self.engine.acquire() as conn:
             statement: Select = self.table.select().where(where_clause)
-            results: ResultProxy = await conn.execute(statement)
+            paginated_statement = self._paginate_query(statement, page, page_size)
+            results: ResultProxy = await conn.execute(paginated_statement)
             return [await self._deserialize_from_db(result) for result in results]
 
     async def insert(self, usecase):
@@ -69,6 +79,13 @@ class BasePostgresClient:
                     # Use SQL [column] != [value]
                     exclusion_ands.append(table_col != excludes)
         return and_(*inclusion_ands, *exclusion_ands)
+
+    def _paginate_query(self, where_clause, page=0, page_size=None):
+        if page_size:
+            where_clause = where_clause.limit(page_size)
+        if page:
+            where_clause = where_clause.offset(page * page_size)
+        return where_clause
 
     async def _deserialize_from_db(self, row: RowProxy):
         # returns attrs object if successful
