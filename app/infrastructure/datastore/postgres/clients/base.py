@@ -28,7 +28,18 @@ class BasePostgresClient:
         self.table = table
         self.db_generated_fields = db_generated_fields or ["created_at", "updated_at"]
 
-    async def where(
+    async def insert(self, usecase):
+        serialized_usecase: Dict = self._serialize_for_db(usecase)
+        async with self.engine.acquire() as conn:
+            statement: Insert = (
+                self.table.insert()
+                .values(**serialized_usecase)
+                .returning(*[column for column in self.table.columns])
+            )
+            results: ResultProxy = await conn.execute(statement)
+            return await results.fetchone()
+
+    async def select_where(
         self,
         inclusion_map: Mapping = None,
         exclusion_map: Mapping = None,
@@ -43,16 +54,15 @@ class BasePostgresClient:
             results: ResultProxy = await conn.execute(paginated_statement)
             return [await self._deserialize_from_db(result) for result in results]
 
-    async def insert(self, usecase):
-        serialized_usecase: Dict = self._serialize_for_db(usecase)
+    async def update_where(
+        self,
+        values_map: Mapping,
+        inclusion_map: Mapping = None,
+        exclusion_map: Mapping = None,
+    ):
+        where_clause = self._generate_where_clause(inclusion_map, exclusion_map)
         async with self.engine.acquire() as conn:
-            statement: Insert = (
-                self.table.insert()
-                .values(**serialized_usecase)
-                .returning(*[column for column in self.table.columns])
-            )
-            results: ResultProxy = await conn.execute(statement)
-            return await results.fetchone()
+            statement = self.table.update.where(where_clause)
 
     def _generate_where_clause(
         self, inclusion_map: Mapping = None, exclusion_map: Mapping = None
@@ -79,6 +89,9 @@ class BasePostgresClient:
                     # Use SQL [column] != [value]
                     exclusion_ands.append(table_col != excludes)
         return and_(*inclusion_ands, *exclusion_ands)
+
+    def _generate_values_clause(self, values_map: Mapping):
+        pass
 
     def _paginate_query(self, where_clause, page=0, page_size=None):
         if page_size:
