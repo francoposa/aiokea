@@ -52,7 +52,7 @@ class BasePostgresClient:
             statement: Select = self.table.select().where(where_clause)
             paginated_statement = self._paginate_query(statement, page, page_size)
             results: ResultProxy = await conn.execute(paginated_statement)
-            return [await self._deserialize_from_db(result) for result in results]
+            return [await self._deserialize_from_db(result) async for result in results]
 
     async def update_where(
         self,
