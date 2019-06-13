@@ -1,3 +1,4 @@
+from app.usecases import User
 from tests import db_setup
 
 
@@ -9,10 +10,10 @@ async def test_where(db, user_pg_client):
 
     # Filters
     result_include = await user_pg_client.select_where(
-        inclusion_map={"username": ["brian", "roman"]}
+        include={"username": ["brian", "roman"]}
     )
     result_exclude = await user_pg_client.select_where(
-        exclusion_map={"username": ["brian", "roman"]}
+        exclude={"username": ["brian", "roman"]}
     )
     assert len(result_include) + len(result_exclude) == stub_count
 
@@ -27,3 +28,12 @@ async def test_where_paginated(db, user_pg_client):
         retrieved_records += len(results)
         assert retrieved_records == (page * page_size) + len(results)
         page += 1
+
+
+async def test_insert(db, user_pg_client):
+    old_user_count = len(await user_pg_client.select_where())
+    new_user = User(username="test", email="test")
+    inserted_user = await user_pg_client.insert(new_user)
+    assert inserted_user.id == new_user.id
+    new_user_count = len(await user_pg_client.select_where())
+    assert new_user_count == old_user_count + 1
