@@ -1,6 +1,3 @@
-"""Base Serializer"""
-
-
 from marshmallow import Schema, post_dump
 
 

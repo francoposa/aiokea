@@ -1,3 +1,4 @@
+import json
 import os
 
 import pytest
@@ -45,3 +46,8 @@ async def db(loop, engine, user_pg_client):
 
     engine.close()
     await engine.wait_closed()
+
+
+@pytest.fixture
+def user_post():
+    return json.load(open("stubs/users/POST.json"))
