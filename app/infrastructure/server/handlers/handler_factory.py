@@ -15,6 +15,9 @@ def post_handler_factory(usecase_class) -> asyncio.coroutine:
     """Create post handler coroutine to be called by aiohtttp upon receipt of a POST request"""
 
     async def post_handler(request: web.Request) -> web.Response:
-        pass
+        """POST handler for a usecase."""
+
+        repo = request.app[constants.REPO][usecase_cls]
+        adapter = request.app[constants.HTTP_ADAPTER][usecase_cls]
 
     return post_handler

@@ -7,8 +7,7 @@ from aiohttp import web
 from aiopg.sa import create_engine
 
 from app.infrastructure.datastore.postgres import UserPostgresClient
-from app.infrastructure.server import http
-from app.usecases import User
+from app.infrastructure.server import setup_routes
 
 
 def on_startup(conf: Mapping):
@@ -20,6 +19,7 @@ def on_startup(conf: Mapping):
         These are tasks that should be run after the event loop has been started but before the HTTP
         server has been started.
         """
+        setup_routes(app)
         pg_engine = await create_engine(**conf["postgres"])
         user_pg_client = UserPostgresClient(pg_engine)
 
@@ -36,6 +36,6 @@ def main():
         conf = json.load(conf_file)
 
     app = web.Application()
-    http.configure_app(app, on_startup(conf))
+    app.on_startup.append(on_startup(conf))
     port = int(os.environ.get("PORT", 8080))
     web.run_app(app, host="0.0.0.0", port=port)

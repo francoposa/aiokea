@@ -7,7 +7,7 @@ from typing import Awaitable
 import aiohttp_cors
 from aiohttp import web
 
-from app.infrastructure.server.http.handlers import health
+from app.infrastructure.server.handlers import health
 
 RUNNING_TASKS = "running_tasks"
 
@@ -15,7 +15,7 @@ HEALTH = "/health"
 INFO = "/info"
 
 
-def _setup_routes(app):
+def setup_routes(app):
     """Add routes to the given aiohttp app."""
 
     # Default cors settings.
@@ -33,14 +33,6 @@ def _setup_routes(app):
 
     # Metadata.
     app.router.add_get(INFO, health.info)
-
-
-def configure_app(app: web.Application, startup_handler):
-    """Configure the web.Application."""
-
-    _setup_routes(app)
-    # Schedule custom startup routine.
-    app.on_startup.append(startup_handler)
 
 
 def register_dependency(app, constant_key, dependency, usecase=None):
