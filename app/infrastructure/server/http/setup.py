@@ -1,6 +1,7 @@
 """
 Setup functions for HTTP server.
 """
+import asyncio
 from typing import Awaitable
 
 import aiohttp_cors
@@ -60,5 +61,5 @@ def register_task(app: web.Application, coro: Awaitable):
     if RUNNING_TASKS not in app:
         app[RUNNING_TASKS] = []
 
-    task = app.loop.create_task(coro)
+    task = asyncio.create_task(coro)
     app[RUNNING_TASKS].append(task)
