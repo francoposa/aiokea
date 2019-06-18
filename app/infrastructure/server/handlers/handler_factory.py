@@ -1,6 +1,8 @@
 import asyncio
 from aiohttp import web
 
+from app.infrastructure.server import app_constants
+
 """
 Our adapters provide generalized methods for marshaling and un-marshaling objects
 and our database clients provide the same generality for database CRUD operations.
@@ -17,7 +19,7 @@ def post_handler_factory(usecase_class) -> asyncio.coroutine:
     async def post_handler(request: web.Request) -> web.Response:
         """POST handler for a usecase."""
 
-        repo = request.app[constants.REPO][usecase_cls]
-        adapter = request.app[constants.HTTP_ADAPTER][usecase_cls]
+        datastore_client = request.app[app_constants.DATASTORE_CLIENT][usecase_class]
+        adapter = request.app[app_constants.HTTP_ADAPTER][usecase_class]
 
     return post_handler

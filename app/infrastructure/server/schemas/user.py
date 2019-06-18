@@ -13,3 +13,7 @@ class UserSchema(BaseSchema):
     password = fields.Str(load_only=True)
     created_at = fields.DateTime()
     updated_at = fields.DateTime()
+
+
+class UserAdapter(UserSchema):
+    pass

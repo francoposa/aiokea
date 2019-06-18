@@ -7,12 +7,9 @@ from typing import Awaitable
 import aiohttp_cors
 from aiohttp import web
 
+from app.infrastructure.server.app_constants import RUNNING_TASKS
 from app.infrastructure.server.handlers import health
-
-RUNNING_TASKS = "running_tasks"
-
-HEALTH = "/health"
-INFO = "/info"
+from app.infrastructure.server.routes import HEALTH_PATH, HEALTH_NAME
 
 
 def setup_routes(app):
@@ -28,11 +25,8 @@ def setup_routes(app):
         },
     )
 
-    # Health check.
-    app.router.add_get(HEALTH, health.health_check)
-
-    # Metadata.
-    app.router.add_get(INFO, health.info)
+    # Health check
+    app.router.add_get(HEALTH_PATH, health.health_check, name=HEALTH_NAME)
 
 
 def register_dependency(app, constant_key, dependency, usecase=None):
@@ -47,8 +41,7 @@ def register_dependency(app, constant_key, dependency, usecase=None):
 
 
 def register_task(app: web.Application, coro: Awaitable):
-    """Register a background task with the aiohttp app.
-    """
+    """Register a background task with the aiohttp app."""
 
     if RUNNING_TASKS not in app:
         app[RUNNING_TASKS] = []
