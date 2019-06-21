@@ -9,8 +9,8 @@ from app.usecases.resources.utils import generate_uuid
 @attr.s(slots=True)
 class User:
 
-    username = attr.ib(validator=instance_of(str))
-    email = attr.ib(validator=instance_of(str))
+    username = attr.ib(validator=optional(instance_of(str)))
+    email = attr.ib(validator=optional(instance_of(str)))
 
     # Auto-generated on creation of usecase object
     id = attr.ib(validator=instance_of(str), default=attr.Factory(generate_uuid))

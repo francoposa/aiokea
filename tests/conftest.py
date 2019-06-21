@@ -6,6 +6,7 @@ from aiopg.sa import create_engine, Engine
 
 from app.infrastructure.datastore import postgres
 import tests.db_setup as db_setup
+from app.infrastructure.server.adapters.user import HTTPUserAdapter
 
 
 @pytest.fixture
@@ -49,5 +50,10 @@ async def db(loop, engine, user_pg_client):
 
 
 @pytest.fixture
+def user_http_adapter():
+    return HTTPUserAdapter()
+
+
+@pytest.fixture
 def user_post():
-    return json.load(open("stubs/users/POST.json"))
+    return json.load(open("./tests/stubs/users/POST.json"))
