@@ -2,7 +2,7 @@
 Setup functions for HTTP server.
 """
 import asyncio
-from typing import Awaitable
+from typing import Coroutine
 
 import aiohttp_cors
 from aiohttp import web
@@ -40,11 +40,11 @@ def register_dependency(app, constant_key, dependency, usecase=None):
         app[constant_key][usecase] = dependency
 
 
-def register_task(app: web.Application, coro: Awaitable):
+def register_task(app: web.Application, coroutine: Coroutine):
     """Register a background task with the aiohttp app."""
 
     if RUNNING_TASKS not in app:
         app[RUNNING_TASKS] = []
 
-    task = asyncio.create_task(coro)
+    task = asyncio.create_task(coroutine)
     app[RUNNING_TASKS].append(task)
