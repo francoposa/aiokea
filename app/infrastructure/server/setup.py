@@ -9,7 +9,14 @@ from aiohttp import web
 
 from app.infrastructure.server.app_constants import RUNNING_TASKS
 from app.infrastructure.server.handlers import health
-from app.infrastructure.server.routes import HEALTH_PATH, HEALTH_NAME
+from app.infrastructure.server.handlers.handler_factory import post_handler_factory
+from app.infrastructure.server.routes import (
+    HEALTH_PATH,
+    HEALTH_NAME,
+    USER_PATH,
+    USER_NAME,
+)
+from app.usecases import User
 
 
 def setup_routes(app):
@@ -27,6 +34,11 @@ def setup_routes(app):
 
     # Health check
     app.router.add_get(HEALTH_PATH, health.health_check, name=HEALTH_NAME)
+
+    # Users endpoint
+    app.router.add_post(
+        USER_PATH, post_handler_factory(usecase_class=User), name=USER_NAME
+    )
 
 
 def register_dependency(app, constant_key, dependency, usecase=None):

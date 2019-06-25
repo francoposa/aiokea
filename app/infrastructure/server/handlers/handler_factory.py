@@ -1,4 +1,3 @@
-
 from typing import Type
 
 from aiohttp import web
@@ -23,6 +22,6 @@ def post_handler_factory(usecase_class: Type):
 
         datastore_client = request.app[app_constants.DATASTORE_CLIENT][usecase_class]
         adapter = request.app[app_constants.HTTP_ADAPTER][usecase_class]
-
+        return web.Response()
 
     return post_handler
