@@ -5,8 +5,6 @@ from app.usecases import User
 
 
 class UserSchema(BaseSchema):
-    class Meta:
-        type_ = "user"
 
     id = fields.Str(dump_only=True)
     username = fields.Str(required=True)
