@@ -42,6 +42,7 @@ class BasePostgresClient:
             try:
                 results: ResultProxy = await conn.execute(statement)
             except psycopg2.IntegrityError as e:
+                # UniqueViolation
                 if e.pgcode == "23505":
                     raise self.DuplicateError()
             result = await results.fetchone()
