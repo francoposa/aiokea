@@ -1,6 +1,7 @@
 import marshmallow
 import pytest
 
+from app.infrastructure.server.adapters.user import UserSchema
 from app.usecases import User
 
 
@@ -30,4 +31,5 @@ def test_usecase_to_mapping_success(user_http_adapter):
         "email": "test@test.com",
         "created_at": None,
         "updated_at": None,
+        "record_type": "user",
     }

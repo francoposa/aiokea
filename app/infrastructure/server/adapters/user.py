@@ -5,6 +5,12 @@ from app.usecases import User
 
 
 class UserSchema(BaseSchema):
+    """User Serializer"""
+
+    class Meta:
+        """Meta data for UserSchema."""
+
+        record_type_ = "user"
 
     id = fields.Str(dump_only=True)
     username = fields.Str(required=True)
