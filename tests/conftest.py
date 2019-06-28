@@ -9,7 +9,7 @@ from app import usecases
 from app.infrastructure.datastore import postgres
 import tests.db_setup as db_setup
 from app.infrastructure.server import app_constants
-from app.infrastructure.server.adapters.user import HTTPUserAdapter
+from app.infrastructure.server.adapters.user import UserHTTPAdapter
 from app.infrastructure.server.setup import register_dependency, setup_routes
 
 
@@ -35,7 +35,7 @@ async def user_pg_client(engine):
 
 @pytest.fixture
 def user_http_adapter():
-    return HTTPUserAdapter()
+    return UserHTTPAdapter()
 
 
 @pytest.fixture
@@ -71,7 +71,7 @@ def web_app(loop, user_pg_client):
 
         # Register dependencies with the aiohttp app
         register_dependency(
-            app, app_constants.DATASTORE_CLIENT, user_pg_client, usecases.User
+            app, app_constants.DATABASE_CLIENT, user_pg_client, usecases.User
         )
         register_dependency(
             app, app_constants.HTTP_ADAPTER, user_http_adapter, usecases.User

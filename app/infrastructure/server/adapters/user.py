@@ -1,6 +1,6 @@
 from marshmallow import fields
 
-from app.infrastructure.server.adapters.base import BaseSchema, BaseHTTPUsecaseAdapter
+from app.infrastructure.server.adapters.base import BaseSchema, BaseHTTPAdapter
 from app.usecases import User
 
 
@@ -19,6 +19,6 @@ class UserSchema(BaseSchema):
     updated_at = fields.DateTime()
 
 
-class HTTPUserAdapter(BaseHTTPUsecaseAdapter):
+class UserHTTPAdapter(BaseHTTPAdapter):
     def __init__(self):
         super().__init__(schema=UserSchema(), usecase_class=User)

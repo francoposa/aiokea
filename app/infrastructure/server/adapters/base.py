@@ -1,6 +1,5 @@
 from typing import Mapping, Type
 
-import attr
 from marshmallow import Schema, post_dump
 
 
@@ -10,6 +9,7 @@ class BaseSchema(Schema):
     class Meta:
         """Meta data for BaseSchema."""
 
+        ordered = True
         record_type_ = None
 
     @post_dump
@@ -19,7 +19,7 @@ class BaseSchema(Schema):
         return data
 
 
-class BaseHTTPUsecaseAdapter:
+class BaseHTTPAdapter:
     def __init__(self, schema: BaseSchema, usecase_class: Type):
         self.schema = schema
         self.UsecaseClass: Type = usecase_class

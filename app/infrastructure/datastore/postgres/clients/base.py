@@ -5,6 +5,7 @@ import attr
 
 import aiopg.sa
 from aiopg.sa.result import ResultProxy, RowProxy
+import psycopg2
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import Insert
 from sqlalchemy.sql.selectable import Select
@@ -15,6 +16,9 @@ DEFAULT_PAGE_SIZE = 100
 
 
 class BasePostgresClient:
+    class DuplicateError(Exception):
+        api_error = "duplicate resource"
+
     def __init__(
         self,
         usecase_class,
@@ -35,8 +39,13 @@ class BasePostgresClient:
                 .values(**serialized_usecase)
                 .returning(*[column for column in self.table.columns])
             )
-            results: ResultProxy = await conn.execute(statement)
-            return await results.fetchone()
+            try:
+                results: ResultProxy = await conn.execute(statement)
+            except psycopg2.IntegrityError as e:
+                if e.pgcode == "23505":
+                    raise self.DuplicateError()
+            result = await results.fetchone()
+            return await self._deserialize_from_db(result)
 
     async def select_first_where(
         self, include: Mapping = None, exclude: Mapping = None
