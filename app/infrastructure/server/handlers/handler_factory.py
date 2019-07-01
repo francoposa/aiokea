@@ -53,3 +53,9 @@ def post_handler_factory(usecase_class: Type):
         return web.json_response(response_usecase)
 
     return post_handler
+
+def get_handler_factory(usecase_class: Type):
+    """Create get handler coroutine to be called by aiohttp upon receipt of a POST request"""
+
+    async def get_handler(request: web.Request) -> web.Response:
+        """GET handler for a usecase."""

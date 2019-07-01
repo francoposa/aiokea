@@ -8,3 +8,5 @@ Asyncio Python utilizing the following libraries:
 * marshmallow: marshaling data between JSON web requests and usecase-layer objects
 * alembic: database migration and schema management with SQLAlchemy support
  
+API Design
+* GET request filter query design influenced by the LHS Brackets recommendation here: https://www.moesif.com/blog/technical/api-design/REST-API-Design-Filtering-Sorting-and-Pagination/

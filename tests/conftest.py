@@ -83,6 +83,6 @@ def web_app(loop, user_pg_client):
 
 
 @pytest.fixture
-async def client(aiohttp_client, web_app):
+async def web_client(aiohttp_client, web_app):
     client = await aiohttp_client(web_app)
     return client
