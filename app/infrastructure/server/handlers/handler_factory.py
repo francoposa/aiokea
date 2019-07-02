@@ -1,6 +1,8 @@
 import json
+import re
+from collections import defaultdict
 from enum import Enum
-from typing import Type, Dict
+from typing import Type, List, Mapping
 
 import marshmallow
 from aiohttp import web
@@ -23,10 +25,16 @@ database operations are explicitly tied together.
 This is what makes the app CRUD out of the box.
 """
 
+FILTER_KEY_REGEX = re.compile(r"\[(.*?)\]")
+
 
 class HTTPFilterParams(Enum):
     LIMIT = "limit"
     OFFSET = "offset"
+
+    @classmethod
+    def has_value(cls, value):
+        return any(value == item.value for item in cls)
 
 
 class HTTPFilterOperators(Enum):
@@ -37,6 +45,10 @@ class HTTPFilterOperators(Enum):
     LT = "lt"  # less than
     LTE = "lte"  # less than or equal to
     IN = "in"  # inclusion operator
+
+    @classmethod
+    def has_value(cls, value):
+        return any(value == item.value for item in cls)
 
 
 def post_handler_factory(usecase_class: Type):
@@ -85,8 +97,22 @@ def get_handler_factory(usecase_class: Type):
     return get_handler
 
 
-def _parse_query_params(request: web.Request):
+def _parse_query_params(request: web.Request) -> Mapping[str, Mapping[str, list]]:
     raw_query_dict: MultiDictProxy = request.query
-    for key in raw_query_dict.keys():
-        print(key)
-        print(raw_query_dict.getall(key))
+    merged_query_dict = defaultdict(lambda: defaultdict(list))
+    for full_key in raw_query_dict.keys():
+        key_parts: List[str] = FILTER_KEY_REGEX.split(full_key)
+        if key_parts:
+            key_field: str = key_parts[0]
+            if len(key_parts) == 1:
+                # Normal query param key like "created_at"
+                merged_query_dict[key_field][HTTPFilterOperators.EQ.value].extend(
+                    raw_query_dict.getall(full_key)
+                )
+            else:
+                # Filter-style query param key like "created_at[eq]"
+                key_filter = key_parts[1]
+                merged_query_dict[key_field][key_filter].extend(
+                    raw_query_dict.getall(full_key)
+                )
+    return merged_query_dict
