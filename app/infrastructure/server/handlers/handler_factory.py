@@ -1,8 +1,10 @@
 import json
-from typing import Type
+from enum import Enum
+from typing import Type, Dict
 
 import marshmallow
 from aiohttp import web
+from multidict import MultiDictProxy
 
 from app.infrastructure.datastore.postgres.clients.base import BasePostgresClient
 from app.infrastructure.server.app_constants import DATABASE_CLIENT, HTTP_ADAPTER
@@ -22,13 +24,28 @@ This is what makes the app CRUD out of the box.
 """
 
 
+class HTTPFilterParams(Enum):
+    LIMIT = "limit"
+    OFFSET = "offset"
+
+
+class HTTPFilterOperators(Enum):
+    EQ = "eq"  # equal to
+    NE = "ne"  # not equal to
+    GT = "gt"  # greater than
+    GTE = "gte"  # greater than or equal to
+    LT = "lt"  # less than
+    LTE = "lte"  # less than or equal to
+    IN = "in"  # inclusion operator
+
+
 def post_handler_factory(usecase_class: Type):
     """Create post handler coroutine to be called by aiohttp upon receipt of a POST request"""
 
     async def post_handler(request: web.Request) -> web.Response:
         """POST handler for a usecase."""
 
-        db_client = request.app[DATABASE_CLIENT][usecase_class]
+        db_client: BasePostgresClient = request.app[DATABASE_CLIENT][usecase_class]
         adapter: BaseHTTPAdapter = request.app[HTTP_ADAPTER][usecase_class]
 
         try:
@@ -54,8 +71,22 @@ def post_handler_factory(usecase_class: Type):
 
     return post_handler
 
+
 def get_handler_factory(usecase_class: Type):
     """Create get handler coroutine to be called by aiohttp upon receipt of a POST request"""
 
     async def get_handler(request: web.Request) -> web.Response:
         """GET handler for a usecase."""
+        db_client: BasePostgresClient = request.app[DATABASE_CLIENT][usecase_class]
+        adapter: BaseHTTPAdapter = request.app[HTTP_ADAPTER][usecase_class]
+        query_dict = _parse_query_params(request)
+        return web.json_response(query_dict)
+
+    return get_handler
+
+
+def _parse_query_params(request: web.Request):
+    raw_query_dict: MultiDictProxy = request.query
+    for key in raw_query_dict.keys():
+        print(key)
+        print(raw_query_dict.getall(key))
