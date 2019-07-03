@@ -8,9 +8,10 @@ from aiopg.sa import create_engine
 
 from app import usecases
 from app.infrastructure.datastore.postgres import UserPostgresClient
-from app.infrastructure.server import setup_routes, app_constants
-from app.infrastructure.server.adapters.user import UserHTTPAdapter
-from app.infrastructure.server.setup import register_dependency
+from app.infrastructure.server.http.setup import setup_routes
+from app.infrastructure.server.http import app_constants
+from app.infrastructure.server.http.adapters.user import UserHTTPAdapter
+from app.infrastructure.server.http.setup import register_dependency
 
 
 def on_startup(conf: Mapping):

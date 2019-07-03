@@ -9,8 +9,8 @@ from aiohttp import web
 from multidict import MultiDictProxy
 
 from app.infrastructure.datastore.postgres.clients.base import BasePostgresClient
-from app.infrastructure.server.app_constants import DATABASE_CLIENT, HTTP_ADAPTER
-from app.infrastructure.server.adapters.base import BaseHTTPAdapter
+from app.infrastructure.server.http.app_constants import DATABASE_CLIENT, HTTP_ADAPTER
+from app.infrastructure.server.http.adapters.base import BaseHTTPAdapter
 
 """
 Our adapters provide methods for marshalling data between the mapping types returned
@@ -28,7 +28,7 @@ This is what makes the app CRUD out of the box.
 FILTER_KEY_REGEX = re.compile(r"\[(.*?)\]")
 
 
-class HTTPFilterParams(Enum):
+class HTTPQueryParamKeys(Enum):
     LIMIT = "limit"
     OFFSET = "offset"
 
@@ -37,7 +37,7 @@ class HTTPFilterParams(Enum):
         return any(value == item.value for item in cls)
 
 
-class HTTPFilterOperators(Enum):
+class HTTPQueryParamOperators(Enum):
     EQ = "eq"  # equal to
     NE = "ne"  # not equal to
     GT = "gt"  # greater than
@@ -97,22 +97,22 @@ def get_handler_factory(usecase_class: Type):
     return get_handler
 
 
-def _parse_query_params(request: web.Request) -> Mapping[str, Mapping[str, list]]:
-    raw_query_dict: MultiDictProxy = request.query
-    merged_query_dict = defaultdict(lambda: defaultdict(list))
-    for full_key in raw_query_dict.keys():
+def _parse_query_params(request: web.Request) -> Mapping[str, Mapping[str, List[str]]]:
+    raw_query_map: MultiDictProxy = request.query
+    merged_query_map = defaultdict(lambda: defaultdict(list))
+    for full_key in raw_query_map.keys():
         key_parts: List[str] = FILTER_KEY_REGEX.split(full_key)
         if key_parts:
             key_field: str = key_parts[0]
             if len(key_parts) == 1:
                 # Normal query param key like "created_at"
-                merged_query_dict[key_field][HTTPFilterOperators.EQ.value].extend(
-                    raw_query_dict.getall(full_key)
+                merged_query_map[key_field][HTTPQueryParamOperators.EQ.value].extend(
+                    raw_query_map.getall(full_key)
                 )
             else:
                 # Filter-style query param key like "created_at[eq]"
                 key_filter = key_parts[1]
-                merged_query_dict[key_field][key_filter].extend(
-                    raw_query_dict.getall(full_key)
+                merged_query_map[key_field][key_filter].extend(
+                    raw_query_map.getall(full_key)
                 )
-    return merged_query_dict
+    return merged_query_map

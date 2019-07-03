@@ -1,7 +1,6 @@
 import marshmallow
 import pytest
 
-from app.infrastructure.server.adapters.user import UserSchema
 from app.usecases import User
 
 

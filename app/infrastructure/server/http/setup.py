@@ -7,13 +7,13 @@ from typing import Coroutine
 import aiohttp_cors
 from aiohttp import web
 
-from app.infrastructure.server.app_constants import RUNNING_TASKS
-from app.infrastructure.server.handlers import health
-from app.infrastructure.server.handlers.handler_factory import (
+from app.infrastructure.server.http.app_constants import RUNNING_TASKS
+from app.infrastructure.server.http.handlers import health
+from app.infrastructure.server.http.handlers.handler_factory import (
     post_handler_factory,
     get_handler_factory,
 )
-from app.infrastructure.server.routes import (
+from app.infrastructure.server.http.routes import (
     HEALTH_PATH,
     HEALTH_NAME,
     USER_PATH,

@@ -8,9 +8,9 @@ from aiopg.sa import create_engine, Engine
 from app import usecases
 from app.infrastructure.datastore import postgres
 import tests.db_setup as db_setup
-from app.infrastructure.server import app_constants
-from app.infrastructure.server.adapters.user import UserHTTPAdapter
-from app.infrastructure.server.setup import register_dependency, setup_routes
+from app.infrastructure.server.http import app_constants
+from app.infrastructure.server.http.adapters.user import UserHTTPAdapter
+from app.infrastructure.server.http.setup import register_dependency, setup_routes
 
 
 @pytest.fixture
