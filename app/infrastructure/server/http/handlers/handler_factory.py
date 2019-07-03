@@ -2,15 +2,16 @@ import json
 import re
 from collections import defaultdict
 from enum import Enum
-from typing import Type, List, Mapping
+from typing import Type, List, Mapping, Set
 
 import marshmallow
 from aiohttp import web
-from multidict import MultiDictProxy
+from multidict import MultiDictProxy, MultiMapping
 
+from app.infrastructure.common.filters import PaginationParams, FilterOperators, Filter
 from app.infrastructure.datastore.postgres.clients.base import BasePostgresClient
 from app.infrastructure.server.http.app_constants import DATABASE_CLIENT, HTTP_ADAPTER
-from app.infrastructure.server.http.adapters.base import BaseHTTPAdapter
+from app.infrastructure.server.http.adapters.base import BaseHTTPAdapter, BaseSchema
 
 """
 Our adapters provide methods for marshalling data between the mapping types returned
@@ -26,29 +27,6 @@ This is what makes the app CRUD out of the box.
 """
 
 FILTER_KEY_REGEX = re.compile(r"\[(.*?)\]")
-
-
-class HTTPQueryParamKeys(Enum):
-    LIMIT = "limit"
-    OFFSET = "offset"
-
-    @classmethod
-    def has_value(cls, value):
-        return any(value == item.value for item in cls)
-
-
-class HTTPQueryParamOperators(Enum):
-    EQ = "eq"  # equal to
-    NE = "ne"  # not equal to
-    GT = "gt"  # greater than
-    GTE = "gte"  # greater than or equal to
-    LT = "lt"  # less than
-    LTE = "lte"  # less than or equal to
-    IN = "in"  # inclusion operator
-
-    @classmethod
-    def has_value(cls, value):
-        return any(value == item.value for item in cls)
 
 
 def post_handler_factory(usecase_class: Type):
@@ -85,34 +63,51 @@ def post_handler_factory(usecase_class: Type):
 
 
 def get_handler_factory(usecase_class: Type):
-    """Create get handler coroutine to be called by aiohttp upon receipt of a POST request"""
+    """Create get handler coroutine to be called by aiohttp upon receipt of a GET request"""
 
     async def get_handler(request: web.Request) -> web.Response:
         """GET handler for a usecase."""
         db_client: BasePostgresClient = request.app[DATABASE_CLIENT][usecase_class]
         adapter: BaseHTTPAdapter = request.app[HTTP_ADAPTER][usecase_class]
-        query_dict = _parse_query_params(request)
+        query_dict = _query_to_filters(request.query, adapter)
         return web.json_response(query_dict)
 
     return get_handler
 
 
-def _parse_query_params(request: web.Request) -> Mapping[str, Mapping[str, List[str]]]:
-    raw_query_map: MultiDictProxy = request.query
-    merged_query_map = defaultdict(lambda: defaultdict(list))
-    for full_key in raw_query_map.keys():
-        key_parts: List[str] = FILTER_KEY_REGEX.split(full_key)
-        if key_parts:
-            key_field: str = key_parts[0]
-            if len(key_parts) == 1:
-                # Normal query param key like "created_at"
-                merged_query_map[key_field][HTTPQueryParamOperators.EQ.value].extend(
-                    raw_query_map.getall(full_key)
-                )
-            else:
-                # Filter-style query param key like "created_at[eq]"
-                key_filter = key_parts[1]
-                merged_query_map[key_field][key_filter].extend(
-                    raw_query_map.getall(full_key)
-                )
-    return merged_query_map
+def _query_to_filters(
+    raw_query_map: MultiMapping, adapter: BaseHTTPAdapter
+) -> List[Filter]:
+    valid_filter_fields: Set[str] = _valid_query_params(adapter.schema)
+    valid_filter_operators: Set[str] = {item.value for item in FilterOperators}
+    query_filters: List[Filter] = []
+    for full_query_param in raw_query_map.keys():
+        # Regex split allows for standard query: `name=test`
+        # as well as filter-style query: `created_at[lte]=2019-06-01`
+        query_param_parts: List[str] = FILTER_KEY_REGEX.split(full_query_param)
+        if query_param_parts and query_param_parts[0] in valid_filter_fields:
+            query_field: str = query_param_parts[0]
+            if len(query_param_parts) == 1:
+                # Normal query param like `name=test`
+                # We assume requester wants a standard equality check
+                for query_value in raw_query_map.getall(full_query_param):
+                    query_filters.append(
+                        Filter(query_field, FilterOperators.EQ.value, query_value)
+                    )
+            elif query_param_parts[1] in valid_filter_operators:
+                # Filter-style query param like `created_at[lte]=2019-06-01`
+                query_operator = query_param_parts[1]
+                for query_value in raw_query_map.getall(full_query_param):
+                    query_filters.append(
+                        Filter(query_field, query_operator, query_value)
+                    )
+    return query_filters
+
+
+def _valid_query_params(http_schema: BaseSchema) -> Set[str]:
+    valid_query_params = set()
+    for field_name in http_schema.fields:
+        valid_query_params.add(field_name)
+    for item in PaginationParams:
+        valid_query_params.add(item.value)
+    return valid_query_params

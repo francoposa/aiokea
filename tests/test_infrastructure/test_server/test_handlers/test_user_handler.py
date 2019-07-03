@@ -1,8 +1,22 @@
-# import pytest
-#
-# from app.infrastructure.server.routes import USER_PATH
-#
-# @pytest.mark.asyncio
+from app.infrastructure.server.http.routes import USER_PATH
+
+from app.infrastructure.server.http.handlers.handler_factory import _valid_query_params
+
+
+def test_valid_query_params(user_http_adapter):
+    user_schema = user_http_adapter.schema
+    valid_params = _valid_query_params(user_schema)
+    assert valid_params == {
+        "id",
+        "username",
+        "email",
+        "created_at",
+        "updated_at",
+        "limit",
+        "offset",
+    }
+
+
 # async def test_post_success(web_client, user_post):
 #
 #     # BASELINE
