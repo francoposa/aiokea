@@ -57,7 +57,7 @@ def post_handler_factory(usecase_class: Type):
                 content_type="application/json",
             )
         response_usecase = adapter.usecase_to_mapping(db_usecase)
-        return web.json_response(response_usecase)
+        return web.json_response({"data": response_usecase})
 
     return post_handler
 
@@ -72,7 +72,7 @@ def get_handler_factory(usecase_class: Type):
         filters: List[Filter] = _query_to_filters(request.query, adapter)
         db_usecases = await db_client.select_where(filters=filters)
         response_usecases = [adapter.usecase_to_mapping(u) for u in db_usecases]
-        return web.json_response(response_usecases)
+        return web.json_response({"data": response_usecases})
 
     return get_handler
 
