@@ -85,22 +85,22 @@ def _query_to_filters(
         # Regex split allows for standard query: `name=test`
         # as well as filter-style query: `created_at[lte]=2019-06-01`
         query_param_parts: List[str] = FILTER_KEY_REGEX.split(full_query_param)
-        if query_param_parts and query_param_parts[0] in valid_filter_fields:
+        if query_param_parts[0] in valid_filter_fields:
             query_field: str = query_param_parts[0]
             if len(query_param_parts) == 1:
-                # Normal query param like `name=test`
+                # Normal query like `name=test`
                 # We assume requester wants a standard equality check
-                for query_value in raw_query_map.getall(full_query_param):
-                    query_filters.append(
-                        Filter(query_field, FilterOperators.EQ.value, query_value)
-                    )
+                query_filters.extend(
+                    Filter(query_field, FilterOperators.EQ.value, query_value)
+                    for query_value in raw_query_map.getall(full_query_param)
+                )
             elif query_param_parts[1] in valid_filter_operators:
-                # Filter-style query param like `created_at[lte]=2019-06-01`
+                # Filter-style query like `created_at[lte]=2019-06-01`
                 query_operator = query_param_parts[1]
-                for query_value in raw_query_map.getall(full_query_param):
-                    query_filters.append(
-                        Filter(query_field, query_operator, query_value)
-                    )
+                query_filters.extend(
+                    Filter(query_field, query_operator, query_value)
+                    for query_value in raw_query_map.getall(full_query_param)
+                )
     return query_filters
 
 
