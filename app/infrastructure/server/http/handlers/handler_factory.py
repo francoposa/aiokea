@@ -4,6 +4,7 @@ from collections import defaultdict
 from enum import Enum
 from typing import Type, List, Mapping, Set
 
+import attr
 import marshmallow
 from aiohttp import web
 from multidict import MultiDictProxy, MultiMapping
@@ -69,8 +70,7 @@ def get_handler_factory(usecase_class: Type):
         """GET handler for a usecase."""
         db_client: BasePostgresClient = request.app[DATABASE_CLIENT][usecase_class]
         adapter: BaseHTTPAdapter = request.app[HTTP_ADAPTER][usecase_class]
-        query_dict = _query_to_filters(request.query, adapter)
-        return web.json_response(query_dict)
+        filters: List[Filter] = _query_to_filters(request.query, adapter)
 
     return get_handler
 
@@ -104,10 +104,10 @@ def _query_to_filters(
     return query_filters
 
 
-def _valid_query_params(http_schema: BaseSchema) -> Set[str]:
+def _valid_query_params(usecase_class: Type) -> Set[str]:
     valid_query_params = set()
-    for field_name in http_schema.fields:
-        valid_query_params.add(field_name)
+    for field in attr.fields(usecase_class):
+        valid_query_params.add(field.name)
     for item in PaginationParams:
         valid_query_params.add(item.value)
     return valid_query_params
