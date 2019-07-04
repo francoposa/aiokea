@@ -1,24 +1,26 @@
+from app.infrastructure.common.filters.filters import Filter
+from app.infrastructure.common.filters.operators import EQ, NE
 from app.usecases import User
 from tests import db_setup
 
 
-async def test_where(db, user_pg_client):
+async def test_select_where(db, user_pg_client):
     stub_count = len(db_setup.stub_users)
     # No filters
     results = await user_pg_client.select_where()
     assert len(results) == stub_count
 
     # Filters
-    result_include = await user_pg_client.select_where(
-        include={"username": ["brian", "roman"]}
+    result_equal_to = await user_pg_client.select_where(
+        [Filter("username", EQ, "brian")]
     )
-    result_exclude = await user_pg_client.select_where(
-        exclude={"username": ["brian", "roman"]}
+    result_not_equal_to = await user_pg_client.select_where(
+        [Filter("username", NE, "brian")]
     )
-    assert len(result_include) + len(result_exclude) == stub_count
+    assert len(result_equal_to) + len(result_not_equal_to) == stub_count
 
 
-async def test_where_paginated(db, user_pg_client):
+async def test_select_where_paginated(db, user_pg_client):
     db_count = len(await user_pg_client.select_where())
     retrieved_records = 0
     page = 0

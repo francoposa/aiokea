@@ -1,5 +1,5 @@
 import datetime
-from typing import Dict, Iterable, Mapping
+from typing import Dict, Iterable, Mapping, List
 
 import attr
 
@@ -11,6 +11,9 @@ from sqlalchemy.dialects.postgresql import Insert
 from sqlalchemy.sql.selectable import Select
 from sqlalchemy.sql import and_, not_
 from sqlalchemy.sql.schema import Column
+
+from app.infrastructure.common.filters.filters import Filter
+from app.infrastructure.common.filters.operators import FilterOperators
 
 DEFAULT_PAGE_SIZE = 100
 
@@ -48,23 +51,21 @@ class BasePostgresClient:
             result = await results.fetchone()
             return await self._deserialize_from_db(result)
 
-    async def select_first_where(
-        self, include: Mapping = None, exclude: Mapping = None
-    ):
-        results = await self.select_where(include=include, exclude=exclude, page_size=1)
+    async def select_first_where(self, filters: List[Filter] = None):
+        results = await self.select_where(filters=filters, page_size=1)
         if results:
             return results[0]
         return None
 
-    async def select_where(
-        self, include: Mapping = None, exclude: Mapping = None, page=0, page_size=None
-    ):
-        where_clause = self._generate_where_clause(include, exclude)
+    async def select_where(self, filters: List[Filter] = None, page=0, page_size=None):
+        where_clause = (
+            self._generate_where_clause_from_filters(filters) if filters else None
+        )
+        select: Select = self.table.select(whereclause=where_clause)
         page_size = page_size if page_size else DEFAULT_PAGE_SIZE
+        paginated_select = self._paginate_query(select, page, page_size)
         async with self.engine.acquire() as conn:
-            statement: Select = self.table.select().where(where_clause)
-            paginated_statement = self._paginate_query(statement, page, page_size)
-            results: ResultProxy = await conn.execute(paginated_statement)
+            results: ResultProxy = await conn.execute(paginated_select)
             return [await self._deserialize_from_db(result) async for result in results]
 
     async def update_where(
@@ -98,15 +99,26 @@ class BasePostgresClient:
                     exclusion_ands.append(table_col != excludes)
         return and_(*inclusion_ands, *exclusion_ands)
 
+    def _generate_where_clause_from_filters(self, filters: List[Filter]):
+        eq_ands = []
+        ne_ands = []
+        for filter in filters:
+            table_col: Column = getattr(self.table.c, filter.field)
+            if filter.operator == FilterOperators.EQ.value:
+                eq_ands.append(table_col == filter.value)
+            elif filter.operator == FilterOperators.NE.value:
+                ne_ands.append(table_col != filter.value)
+        return and_(*eq_ands, *ne_ands)
+
     def _generate_values_clause(self, set_values: Mapping):
         pass
 
-    def _paginate_query(self, where_clause, page=0, page_size=None):
+    def _paginate_query(self, statement, page=0, page_size=None):
         if page_size:
-            where_clause = where_clause.limit(page_size)
+            statement = statement.limit(page_size)
         if page:
-            where_clause = where_clause.offset(page * page_size)
-        return where_clause
+            statement = statement.offset(page * page_size)
+        return statement
 
     async def _deserialize_from_db(self, row: RowProxy):
         # returns attrs object if successful

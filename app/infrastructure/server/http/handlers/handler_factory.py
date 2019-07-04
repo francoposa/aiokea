@@ -1,18 +1,17 @@
 import json
 import re
-from collections import defaultdict
-from enum import Enum
-from typing import Type, List, Mapping, Set
+from typing import Type, List, Set
 
 import attr
 import marshmallow
 from aiohttp import web
-from multidict import MultiDictProxy, MultiMapping
+from multidict import MultiMapping
 
-from app.infrastructure.common.filters import PaginationParams, FilterOperators, Filter
+from app.infrastructure.common.filters.filters import PaginationParams, Filter
+from app.infrastructure.common.filters.operators import EQ, FilterOperators
 from app.infrastructure.datastore.postgres.clients.base import BasePostgresClient
 from app.infrastructure.server.http.app_constants import DATABASE_CLIENT, HTTP_ADAPTER
-from app.infrastructure.server.http.adapters.base import BaseHTTPAdapter, BaseSchema
+from app.infrastructure.server.http.adapters.base import BaseHTTPAdapter
 
 """
 Our adapters provide methods for marshalling data between the mapping types returned
@@ -71,6 +70,9 @@ def get_handler_factory(usecase_class: Type):
         db_client: BasePostgresClient = request.app[DATABASE_CLIENT][usecase_class]
         adapter: BaseHTTPAdapter = request.app[HTTP_ADAPTER][usecase_class]
         filters: List[Filter] = _query_to_filters(request.query, adapter)
+        db_usecases = await db_client.select_where(filters=filters)
+        response_usecases = [adapter.usecase_to_mapping(u) for u in db_usecases]
+        return web.json_response(response_usecases)
 
     return get_handler
 
@@ -78,7 +80,7 @@ def get_handler_factory(usecase_class: Type):
 def _query_to_filters(
     raw_query_map: MultiMapping, adapter: BaseHTTPAdapter
 ) -> List[Filter]:
-    valid_filter_fields: Set[str] = _valid_query_params(adapter.schema)
+    valid_filter_fields: Set[str] = _valid_query_params(adapter.usecase_class)
     valid_filter_operators: Set[str] = {item.value for item in FilterOperators}
     query_filters: List[Filter] = []
     for full_query_param in raw_query_map.keys():
@@ -91,12 +93,12 @@ def _query_to_filters(
                 # Normal query like `name=test`
                 # We assume requester wants a standard equality check
                 query_filters.extend(
-                    Filter(query_field, FilterOperators.EQ.value, query_value)
+                    Filter(query_field, EQ, query_value)
                     for query_value in raw_query_map.getall(full_query_param)
                 )
             elif query_param_parts[1] in valid_filter_operators:
                 # Filter-style query like `created_at[lte]=2019-06-01`
-                query_operator = query_param_parts[1]
+                query_operator: str = query_param_parts[1]
                 query_filters.extend(
                     Filter(query_field, query_operator, query_value)
                     for query_value in raw_query_map.getall(full_query_param)
@@ -108,6 +110,6 @@ def _valid_query_params(usecase_class: Type) -> Set[str]:
     valid_query_params = set()
     for field in attr.fields(usecase_class):
         valid_query_params.add(field.name)
-    for item in PaginationParams:
-        valid_query_params.add(item.value)
+    # for item in PaginationParams:
+    #     valid_query_params.add(item.value)
     return valid_query_params
