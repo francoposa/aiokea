@@ -47,15 +47,15 @@ def setup_routes(app):
     )
 
 
-def register_dependency(app, constant_key, dependency, usecase=None):
+def register_dependency(app, constant_key, dependency, usecase_cls=None):
     """Add dependencies used by the HTTP handlers."""
 
-    if usecase is None:
+    if usecase_cls is None:
         app[constant_key] = dependency
     else:
         if constant_key not in app:
             app[constant_key] = {}
-        app[constant_key][usecase] = dependency
+        app[constant_key][usecase_cls] = dependency
 
 
 def register_task(app: web.Application, coroutine: Coroutine):

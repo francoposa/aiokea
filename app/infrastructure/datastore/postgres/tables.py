@@ -1,6 +1,7 @@
 import sqlalchemy as sa
 
-from app.infrastructure.datastore.postgres.tables.metadata import METADATA
+
+METADATA = sa.MetaData()
 
 USER = sa.Table(
     "users",

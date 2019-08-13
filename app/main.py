@@ -1,6 +1,8 @@
 import argparse
 import json
+import logging
 import os
+import sys
 from typing import Mapping
 
 from aiohttp import web
@@ -41,11 +43,17 @@ def on_startup(conf: Mapping):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config", help="Config file")
+    parser.add_argument(
+        "--level", default=os.environ.get("LOG_LEVEL", "INFO"), help="Logging level."
+    )
     args = parser.parse_args()
 
     # Load config.
     with open(args.config, "r") as conf_file:
         conf = json.load(conf_file)
+
+    # Initialize logger
+    logging.basicConfig(stream=sys.stdout, level=args.level)
 
     app = web.Application()
     app.on_startup.append(on_startup(conf))
