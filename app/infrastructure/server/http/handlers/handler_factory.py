@@ -110,6 +110,6 @@ def _valid_query_params(usecase_class: Type) -> Set[str]:
     valid_query_params = set()
     for field in attr.fields(usecase_class):
         valid_query_params.add(field.name)
-    # for item in PaginationParams:
-    #     valid_query_params.add(item.value)
+    for item in PaginationParams:
+        valid_query_params.add(item.value)
     return valid_query_params
