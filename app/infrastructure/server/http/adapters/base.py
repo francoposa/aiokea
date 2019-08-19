@@ -10,6 +10,7 @@ class BaseSchema(Schema):
         """Meta data for BaseSchema."""
 
         ordered = True
+        strict = True
         record_type_ = None
 
     @post_dump

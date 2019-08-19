@@ -19,7 +19,7 @@ by HTTP requests and the attrs usecase types we have defined.
 
 Our database clients provide the same generality for database CRUD operations.
 
-The handler is the only skeleton functionality that dictates when and how we use 
+The handler is only skeleton functionality that dictates when and how we use 
 the those adapters and clients, and is the only place where web requests and
 database operations are explicitly tied together.
 
@@ -41,19 +41,22 @@ def post_handler_factory(usecase_class: Type):
         try:
             post_data = await request.json()
         except Exception:
-            raise web.HTTPBadRequest(text="The supplied JSON is invalid.")
+            raise web.HTTPBadRequest(
+                text=json.dumps({"errors": ["The supplied JSON is invalid."]})
+            )
 
         try:
             request_usecase = adapter.mapping_to_usecase(post_data)
         except marshmallow.exceptions.ValidationError as e:
+            error_list = [{k: v} for k, v in e.messages.items()]
             raise web.HTTPUnprocessableEntity(
-                text=json.dumps({"errors": e.messages}), content_type="application/json"
+                text=json.dumps({"errors": error_list}), content_type="application/json"
             )
         try:
             db_usecase = await db_client.insert(request_usecase)
         except BasePostgresClient.DuplicateError as e:
             raise web.HTTPConflict(
-                text=json.dumps({"errors": e.api_error}),
+                text=json.dumps({"errors": [e.api_error]}),
                 content_type="application/json",
             )
         response_usecase = adapter.usecase_to_mapping(db_usecase)
