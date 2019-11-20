@@ -30,12 +30,8 @@ def on_startup(conf: Mapping):
         user_pg_client = UserPostgresClient(pg_engine)
 
         # Register dependencies with the aiohttp app
-        register_dependency(
-            app, app_constants.DATABASE_CLIENT, user_pg_client, usecases.User
-        )
-        register_dependency(
-            app, app_constants.HTTP_ADAPTER, UserHTTPAdapter(), usecases.User
-        )
+        register_dependency(app, app_constants.DATABASE_CLIENT, user_pg_client, usecases.User)
+        register_dependency(app, app_constants.HTTP_ADAPTER, UserHTTPAdapter(), usecases.User)
 
     return startup_handler
 

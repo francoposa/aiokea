@@ -41,9 +41,7 @@ def post_handler_factory(usecase_class: Type):
         try:
             post_data = await request.json()
         except Exception:
-            raise web.HTTPBadRequest(
-                text=json.dumps({"errors": ["The supplied JSON is invalid."]})
-            )
+            raise web.HTTPBadRequest(text=json.dumps({"errors": ["The supplied JSON is invalid."]}))
 
         try:
             request_usecase = adapter.mapping_to_usecase(post_data)
@@ -56,8 +54,7 @@ def post_handler_factory(usecase_class: Type):
             db_usecase = await db_client.insert(request_usecase)
         except BasePostgresClient.DuplicateError as e:
             raise web.HTTPConflict(
-                text=json.dumps({"errors": [e.api_error]}),
-                content_type="application/json",
+                text=json.dumps({"errors": [e.api_error]}), content_type="application/json"
             )
         response_usecase = adapter.usecase_to_mapping(db_usecase)
         return web.json_response({"data": response_usecase})
@@ -80,9 +77,7 @@ def get_handler_factory(usecase_class: Type):
     return get_handler
 
 
-def _query_to_filters(
-    raw_query_map: MultiMapping, adapter: BaseHTTPAdapter
-) -> List[Filter]:
+def _query_to_filters(raw_query_map: MultiMapping, adapter: BaseHTTPAdapter) -> List[Filter]:
     valid_filter_fields: Set[str] = _valid_query_params(adapter.usecase_class)
     valid_filter_operators: Set[str] = {item.value for item in FilterOperators}
     query_filters: List[Filter] = []

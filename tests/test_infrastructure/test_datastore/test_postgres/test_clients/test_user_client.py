@@ -11,12 +11,8 @@ async def test_select_where(db, user_pg_client):
     assert len(results) == stub_count
 
     # Filters
-    result_equal_to = await user_pg_client.select_where(
-        [Filter("username", EQ, "brian")]
-    )
-    result_not_equal_to = await user_pg_client.select_where(
-        [Filter("username", NE, "brian")]
-    )
+    result_equal_to = await user_pg_client.select_where([Filter("username", EQ, "brian")])
+    result_not_equal_to = await user_pg_client.select_where([Filter("username", NE, "brian")])
     assert len(result_equal_to) + len(result_not_equal_to) == stub_count
 
 

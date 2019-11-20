@@ -70,12 +70,8 @@ def web_app(loop, user_pg_client):
         setup_routes(app)
 
         # Register dependencies with the aiohttp app
-        register_dependency(
-            app, app_constants.DATABASE_CLIENT, user_pg_client, usecases.User
-        )
-        register_dependency(
-            app, app_constants.HTTP_ADAPTER, user_http_adapter, usecases.User
-        )
+        register_dependency(app, app_constants.DATABASE_CLIENT, user_pg_client, usecases.User)
+        register_dependency(app, app_constants.HTTP_ADAPTER, user_http_adapter, usecases.User)
 
     app = web.Application()
     app.on_startup.append(startup_handler)

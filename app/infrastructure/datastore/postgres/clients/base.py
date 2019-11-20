@@ -58,9 +58,7 @@ class BasePostgresClient:
         return None
 
     async def select_where(self, filters: List[Filter] = None, page=0, page_size=None):
-        where_clause = (
-            self._generate_where_clause_from_filters(filters) if filters else None
-        )
+        where_clause = self._generate_where_clause_from_filters(filters) if filters else None
         select: Select = self.table.select(whereclause=where_clause)
         page_size = page_size if page_size else DEFAULT_PAGE_SIZE
         paginated_select = self._paginate_query(select, page, page_size)
