@@ -2,8 +2,6 @@
 
 set -o errexit -o xtrace
 
-echo $POSTGRES_HOST
-
 echo "Waiting for db..."
 /repo/files/wait-for-it.sh -t 10 $POSTGRES_HOST:$POSTGRES_PORT
 
