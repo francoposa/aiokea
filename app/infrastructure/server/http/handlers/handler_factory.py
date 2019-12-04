@@ -56,8 +56,8 @@ def post_handler_factory(usecase_class: Type):
             raise web.HTTPConflict(
                 text=json.dumps({"errors": [e.api_error]}), content_type="application/json",
             )
-        response_usecase = adapter.usecase_to_mapping(db_usecase)
-        return web.json_response({"data": response_usecase})
+        response_data = adapter.usecase_to_mapping(db_usecase)
+        return web.json_response({"data": response_data})
 
     return post_handler
 
@@ -71,8 +71,8 @@ def get_handler_factory(usecase_class: Type):
         adapter: BaseHTTPAdapter = request.app[HTTP_ADAPTER][usecase_class]
         filters: List[Filter] = _query_to_filters(request.query, adapter)
         db_usecases = await db_client.select_where(filters=filters)
-        response_usecases = [adapter.usecase_to_mapping(u) for u in db_usecases]
-        return web.json_response({"data": response_usecases})
+        response_data = [adapter.usecase_to_mapping(u) for u in db_usecases]
+        return web.json_response({"data": response_data})
 
     return get_handler
 

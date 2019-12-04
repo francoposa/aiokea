@@ -15,7 +15,7 @@ from sqlalchemy.sql.schema import Column
 from app.infrastructure.common.filters.filters import Filter
 from app.infrastructure.common.filters.operators import FilterOperators
 
-DEFAULT_PAGE_SIZE = 100
+DEFAULT_PAGE_SIZE = 25
 
 
 class BasePostgresClient:
@@ -44,10 +44,8 @@ class BasePostgresClient:
             )
             try:
                 results: ResultProxy = await conn.execute(statement)
-            except psycopg2.IntegrityError as e:
-                # UniqueViolation
-                if e.pgcode == "23505":
-                    raise self.DuplicateError()
+            except psycopg2.errors.UniqueViolation as e:
+                raise self.DuplicateError()
             result = await results.fetchone()
             return await self._deserialize_from_db(result)
 
