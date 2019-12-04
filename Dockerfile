@@ -1,6 +1,6 @@
-FROM alpine:3.10
+FROM python:3.8-alpine3.10
 
-ARG VER_PYTHON="3.7"
+ARG VER_PYTHON="3.8"
 
 RUN apk add --no-cache \
         python3 \

@@ -54,7 +54,7 @@ def post_handler_factory(usecase_class: Type):
             db_usecase = await db_client.insert(request_usecase)
         except BasePostgresClient.DuplicateError as e:
             raise web.HTTPConflict(
-                text=json.dumps({"errors": [e.api_error]}), content_type="application/json",
+                text=json.dumps({"errors": [e.api_error]}), content_type="application/json"
             )
         response_data = adapter.usecase_to_mapping(db_usecase)
         return web.json_response({"data": response_data})
