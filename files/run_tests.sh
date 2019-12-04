@@ -1,3 +1,3 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 python -m pytest -p no:warnings tests/
