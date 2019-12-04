@@ -8,11 +8,10 @@ RUN apk add --no-cache \
     && python3 -c "import os, sys;assert sys.version.startswith(os.environ.get('VER_PYTHON'))" \
     && pip3 --version
 
-WORKDIR /app
+WORKDIR /repo
 
-COPY Pipfile /app/Pipfile
-COPY Pipfile.lock /app/Pipfile.lock
-
+COPY Pipfile /repo/Pipfile
+COPY Pipfile.lock /repo/Pipfile.lock
 
 RUN apk add --no-cache \
         gcc \
@@ -22,3 +21,5 @@ RUN apk add --no-cache \
 
 RUN pip3 install pipenv \
     && pipenv install --dev --system --deploy
+
+COPY ./ /repo/
