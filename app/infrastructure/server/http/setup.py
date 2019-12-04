@@ -13,7 +13,12 @@ from app.infrastructure.server.http.handlers.handler_factory import (
     post_handler_factory,
     get_handler_factory,
 )
-from app.infrastructure.server.http.routes import HEALTH_PATH, HEALTH_NAME, USER_PATH, USER_NAME
+from app.infrastructure.server.http.routes import (
+    HEALTH_PATH,
+    HEALTH_NAME,
+    USER_PATH,
+    USER_NAME,
+)
 from app.usecases import User
 
 
