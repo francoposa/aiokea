@@ -8,12 +8,13 @@ from typing import Mapping
 from aiohttp import web
 from aiopg.sa import create_engine
 
-from app import usecases
-from app.infrastructure.datastore.postgres import UserPostgresClient
+
+from app.infrastructure.datastore.postgres.clients.user import UserPostgresClient
 from app.infrastructure.server.http.setup import setup_routes
 from app.infrastructure.server.http import app_constants
 from app.infrastructure.server.http.adapters.user import UserHTTPAdapter
 from app.infrastructure.server.http.setup import register_dependency
+from app.usecases.resources.user import User
 
 
 def on_startup(conf: Mapping):
@@ -30,8 +31,8 @@ def on_startup(conf: Mapping):
         user_pg_client = UserPostgresClient(pg_engine)
 
         # Register dependencies with the aiohttp app
-        register_dependency(app, app_constants.DATABASE_CLIENT, user_pg_client, usecases.User)
-        register_dependency(app, app_constants.HTTP_ADAPTER, UserHTTPAdapter(), usecases.User)
+        register_dependency(app, app_constants.DATABASE_CLIENT, user_pg_client, User)
+        register_dependency(app, app_constants.HTTP_ADAPTER, UserHTTPAdapter(), User)
 
     return startup_handler
 

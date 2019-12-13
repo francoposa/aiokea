@@ -1,9 +1,9 @@
-from app import usecases
+from app.usecases.resources.user import User
 
 stub_users = [
-    usecases.User(username="domtoretto", email="americanmuscle@fastnfurious.com"),
-    usecases.User(username="brian", email="importtuners@fastnfurious.com"),
-    usecases.User(username="roman", email="ejectoseat@fastnfurious.com"),
+    User(username="domtoretto", email="americanmuscle@fastnfurious.com"),
+    User(username="brian", email="importtuners@fastnfurious.com"),
+    User(username="roman", email="ejectoseat@fastnfurious.com"),
 ]
 
 

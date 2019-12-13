@@ -1,6 +1,6 @@
-from app.usecases import User
 from app.infrastructure.datastore.postgres.clients.base import BasePostgresClient
 from app.infrastructure.datastore.postgres.tables import USER
+from app.usecases.resources.user import User
 
 
 class UserPostgresClient(BasePostgresClient):

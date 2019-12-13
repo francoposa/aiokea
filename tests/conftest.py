@@ -5,12 +5,12 @@ import pytest
 from aiohttp import web
 from aiopg.sa import create_engine, Engine
 
-from app import usecases
-from app.infrastructure.datastore import postgres
 import tests.db_setup as db_setup
+from app.infrastructure.datastore.postgres.clients.user import UserPostgresClient
 from app.infrastructure.server.http import app_constants
 from app.infrastructure.server.http.adapters.user import UserHTTPAdapter
 from app.infrastructure.server.http.setup import register_dependency, setup_routes
+from app.usecases.resources.user import User
 
 
 @pytest.fixture
@@ -27,7 +27,7 @@ async def engine() -> Engine:
 
 @pytest.fixture
 async def user_pg_client(engine):
-    pg = postgres.UserPostgresClient(engine)
+    pg = UserPostgresClient(engine)
     yield pg
     pg.engine.close()
     await pg.engine.wait_closed()
@@ -70,8 +70,8 @@ def web_app(loop, user_pg_client):
         setup_routes(app)
 
         # Register dependencies with the aiohttp app
-        register_dependency(app, app_constants.DATABASE_CLIENT, user_pg_client, usecases.User)
-        register_dependency(app, app_constants.HTTP_ADAPTER, user_http_adapter, usecases.User)
+        register_dependency(app, app_constants.DATABASE_CLIENT, user_pg_client, User)
+        register_dependency(app, app_constants.HTTP_ADAPTER, user_http_adapter, User)
 
     app = web.Application()
     app.on_startup.append(startup_handler)
