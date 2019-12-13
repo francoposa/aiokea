@@ -15,18 +15,16 @@ RUN apk add --no-cache \
 
 WORKDIR /repo
 
-COPY pyproject.toml /repo/pyproject.toml
-COPY poetry.lock /repo/poetry.lock
-
-RUN curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
+COPY Pipfile /repo/Pipfile
+COPY Pipfile.lock /repo/Pipfile.lock
 
 RUN apk add --no-cache \
         gcc \
         musl-dev \
         python3-dev
 
-RUN $HOME/.poetry/bin/poetry config virtualenvs.create false \
-    && $HOME/.poetry/bin/poetry install
+RUN pip3 install pipenv \
+    && pipenv install --dev --system --deploy
 
 COPY ./ /repo/
 
