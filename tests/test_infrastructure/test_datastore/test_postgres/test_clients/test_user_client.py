@@ -54,3 +54,15 @@ async def test_insert_duplicate_error(db, user_pg_client):
 
     new_user_count = len(await user_pg_client.select_where())
     assert new_user_count == old_user_count + 1
+
+
+async def test_update(db, user_pg_client):
+    # Get an existing user
+    roman: User = await user_pg_client.select_first_where([Filter("username", EQ, "roman")])
+    roman.username = "bigassforehead"
+    # Update the user
+    await user_pg_client.update(roman.id, roman)
+
+    # Check that the user has been updated
+    updated_roman: User = await user_pg_client.select_first_where([Filter("id", EQ, roman.id)])
+    assert updated_roman.username == "bigassforehead"

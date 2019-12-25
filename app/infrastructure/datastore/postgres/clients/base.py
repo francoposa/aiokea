@@ -9,7 +9,7 @@ import psycopg2
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import Insert
 from sqlalchemy.sql.selectable import Select
-from sqlalchemy.sql import and_, not_
+from sqlalchemy.sql import and_, not_, Update
 from sqlalchemy.sql.schema import Column
 
 from app.infrastructure.common.filters.filters import Filter
@@ -27,27 +27,43 @@ class BasePostgresClient:
         usecase_class,
         engine: aiopg.sa.Engine,
         table: sa.Table,
+        id_field: str = None,
         db_generated_fields: Iterable[str] = None,
     ):
         self.usecase_class = usecase_class
         self.engine = engine
         self.table = table
+        self.id_field = id_field or "id"
         self.db_generated_fields = db_generated_fields or ["created_at", "updated_at"]
 
     async def insert(self, usecase):
         serialized_usecase: Dict = self._serialize_for_db(usecase)
+        insert: Insert = (
+            self.table.insert()
+            .values(**serialized_usecase)
+            .returning(*[column for column in self.table.columns])
+        )
         async with self.engine.acquire() as conn:
-            statement: Insert = (
-                self.table.insert()
-                .values(**serialized_usecase)
-                .returning(*[column for column in self.table.columns])
-            )
             try:
-                results: ResultProxy = await conn.execute(statement)
+                results: ResultProxy = await conn.execute(insert)
+                result = await results.fetchone()
             except psycopg2.errors.UniqueViolation as e:
-                raise self.DuplicateError()
+                raise self.DuplicateError(e)
+        return await self._deserialize_from_db(result)
+
+    async def update(self, id, usecase):
+        serialized_usecase: Dict = self._serialize_for_db(usecase)
+        id_filter = Filter(self.id_field, FilterOperators.EQ.value, id)
+        where_clause = self._generate_where_clause_from_filters([id_filter])
+        update: Update = (
+            self.table.update(whereclause=where_clause)
+            .values(**serialized_usecase)
+            .returning(*[column for column in self.table.columns])
+        )
+        async with self.engine.acquire() as conn:
+            results: ResultProxy = await conn.execute(update)
             result = await results.fetchone()
-            return await self._deserialize_from_db(result)
+        return await self._deserialize_from_db(result)
 
     async def select_first_where(self, filters: List[Filter] = None):
         results = await self.select_where(filters=filters, page_size=1)
@@ -64,12 +80,14 @@ class BasePostgresClient:
             results: ResultProxy = await conn.execute(paginated_select)
             return [await self._deserialize_from_db(result) async for result in results]
 
-    async def update_where(
-        self, set_values: Mapping, include: Mapping = None, exclude: Mapping = None
-    ):
-        where_clause = self._generate_where_clause(include, exclude)
+    async def update_where(self, set_values: Mapping, filters: List[Filter] = None):
+        where_clause = self._generate_where_clause_from_filters(filters) if filters else None
+        update: Update = self.table.update(whereclause=where_clause).values(**set_values).returning(
+            *[column for column in self.table.columns]
+        )
         async with self.engine.acquire() as conn:
-            statement = self.table.update.where(where_clause)
+            results: ResultProxy = await conn.execute(update)
+            return [await self._deserialize_from_db(result) async for result in results]
 
     def _generate_where_clause(self, include: Mapping = None, exclude: Mapping = None):
         """Turn inclusion/exclusion maps into SQLAlchemy `where` clause"""
