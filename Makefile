@@ -6,8 +6,11 @@ build: ## Build the container
 build-nc: ## Build the container without caching
 	docker build --no-cache -t aiohttp-pg .
 
-compose-up-clean: ## use docker compose to start the "-clean" service
-	docker-compose up --remove-orphans aiohttp-pg-clean
+compose-up: ## use docker compose to start the main python service
+	docker-compose up --remove-orphans aiohttp-pg
 
 compose-down:
 	docker-compose down --remove-orphans
+
+compose-ci:
+	docker-compose run --rm ci

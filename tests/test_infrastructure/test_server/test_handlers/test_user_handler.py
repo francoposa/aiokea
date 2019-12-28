@@ -26,12 +26,12 @@ def test_valid_query_params(user_http_adapter):
 #     baseline_size = len(response_body["data"])
 #
 #     # POST
-#     resp = await web_client.post(PUBLIC_USER, json=user_post)
+#     resp = await web_client.post(USER_PATH, json=user_post)
 #     assert resp.status == 200
 #     new_user = (await resp.json())["data"]
 #     assert set(new_user) == key_set
-#
+# a
 #     # NEW USER INSERTED
-#     resp = await web_client.get(PUBLIC_USER)
+#     resp = await web_client.get(USER_PATH)
 #     response_body = await resp.json()
 #     assert len(response_body["data"]) == baseline_size + 1
