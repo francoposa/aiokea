@@ -8,6 +8,7 @@ from aiopg.sa.result import ResultProxy, RowProxy
 import psycopg2
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import Insert
+from sqlalchemy.sql.elements import BinaryExpression
 from sqlalchemy.sql.selectable import Select
 from sqlalchemy.sql import and_, not_, Update
 from sqlalchemy.sql.schema import Column
@@ -54,7 +55,7 @@ class BasePostgresClient:
     async def update(self, id, usecase):
         serialized_usecase: Dict = self._serialize_for_db(usecase)
         id_filter = Filter(self.id_field, FilterOperators.EQ.value, id)
-        where_clause = self._generate_where_clause_from_filters([id_filter])
+        where_clause: BinaryExpression = self._where_clause_from_filters([id_filter])
         update: Update = (
             self.table.update(whereclause=where_clause)
             .values(**serialized_usecase)
@@ -65,6 +66,17 @@ class BasePostgresClient:
             result = await results.fetchone()
         return await self._deserialize_from_db(result)
 
+    async def update_where(self, set_values: Mapping, filters: List[Filter] = None):
+        where_clause: BinaryExpression = self._where_clause_from_filters(
+            filters
+        ) if filters else None
+        update: Update = self.table.update(whereclause=where_clause).values(**set_values).returning(
+            *[column for column in self.table.columns]
+        )
+        async with self.engine.acquire() as conn:
+            results: ResultProxy = await conn.execute(update)
+            return [await self._deserialize_from_db(result) async for result in results]
+
     async def select_first_where(self, filters: List[Filter] = None):
         results = await self.select_where(filters=filters, page_size=1)
         if results:
@@ -72,21 +84,14 @@ class BasePostgresClient:
         return None
 
     async def select_where(self, filters: List[Filter] = None, page=0, page_size=None):
-        where_clause = self._generate_where_clause_from_filters(filters) if filters else None
+        where_clause: BinaryExpression = self._where_clause_from_filters(
+            filters
+        ) if filters else None
         select: Select = self.table.select(whereclause=where_clause)
-        page_size = page_size if page_size else DEFAULT_PAGE_SIZE
-        paginated_select = self._paginate_query(select, page, page_size)
+        page_size: int = page_size if page_size else DEFAULT_PAGE_SIZE
+        paginated_select: Select = self._paginate_query(select, page, page_size)
         async with self.engine.acquire() as conn:
             results: ResultProxy = await conn.execute(paginated_select)
-            return [await self._deserialize_from_db(result) async for result in results]
-
-    async def update_where(self, set_values: Mapping, filters: List[Filter] = None):
-        where_clause = self._generate_where_clause_from_filters(filters) if filters else None
-        update: Update = self.table.update(whereclause=where_clause).values(**set_values).returning(
-            *[column for column in self.table.columns]
-        )
-        async with self.engine.acquire() as conn:
-            results: ResultProxy = await conn.execute(update)
             return [await self._deserialize_from_db(result) async for result in results]
 
     def _generate_where_clause(self, include: Mapping = None, exclude: Mapping = None):
@@ -113,7 +118,7 @@ class BasePostgresClient:
                     exclusion_ands.append(table_col != excludes)
         return and_(*inclusion_ands, *exclusion_ands)
 
-    def _generate_where_clause_from_filters(self, filters: List[Filter]):
+    def _where_clause_from_filters(self, filters: List[Filter]):
         eq_ands = []
         ne_ands = []
         for filter in filters:

@@ -29,6 +29,7 @@ async def test_select_where_paginated(db, user_pg_client):
         retrieved_records += len(results)
         assert retrieved_records == (page * page_size) + len(results)
         page += 1
+    assert retrieved_records == db_count
 
 
 async def test_insert(db, user_pg_client):
@@ -66,3 +67,23 @@ async def test_update(db, user_pg_client):
     # Check that the user has been updated
     updated_roman: User = await user_pg_client.select_first_where([Filter("id", EQ, roman.id)])
     assert updated_roman.username == "bigassforehead"
+
+
+async def test_update_where(db, user_pg_client):
+    # Get baseline
+    user_count = len(await user_pg_client.select_where())
+    old_disabled_user_count = len(
+        await user_pg_client.select_where([Filter("is_enabled", EQ, False)])
+    )
+    assert old_disabled_user_count != user_count
+
+    # Update users
+    await user_pg_client.update_where(
+        set_values={"is_enabled": False}, filters=[Filter("is_enabled", EQ, True)]
+    )
+
+    # Check that all users are now disabled
+    new_disabled_user_count = len(
+        await user_pg_client.select_where([Filter("is_enabled", EQ, False)])
+    )
+    assert new_disabled_user_count == user_count

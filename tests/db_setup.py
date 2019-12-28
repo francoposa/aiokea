@@ -4,6 +4,7 @@ stub_users = [
     User(username="domtoretto", email="americanmuscle@fastnfurious.com"),
     User(username="brian", email="importtuners@fastnfurious.com"),
     User(username="roman", email="ejectoseat@fastnfurious.com"),
+    User(username="han", email="han@fastnfurious.com", is_enabled=False),
 ]
 
 

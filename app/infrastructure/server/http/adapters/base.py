@@ -29,5 +29,5 @@ class BaseHTTPAdapter:
         usecase_dict = self.schema.load(mapping)
         return self.usecase_class(**usecase_dict)
 
-    def usecase_to_mapping(self, usecase):
+    def usecase_to_mapping(self, usecase) -> Mapping:
         return self.schema.dump(usecase)

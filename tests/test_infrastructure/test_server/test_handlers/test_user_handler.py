@@ -10,6 +10,7 @@ def test_valid_query_params(user_http_adapter):
         "id",
         "username",
         "email",
+        "is_enabled",
         "created_at",
         "updated_at",
         "limit",

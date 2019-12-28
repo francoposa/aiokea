@@ -28,6 +28,7 @@ def test_usecase_to_mapping_success(user_http_adapter):
         "id": "1",
         "username": "test",
         "email": "test@test.com",
+        "is_enabled": True,
         "created_at": None,
         "updated_at": None,
         "record_type": "user",

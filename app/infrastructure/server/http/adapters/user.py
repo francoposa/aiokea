@@ -15,6 +15,7 @@ class UserSchema(BaseSchema):
     id = fields.Str(dump_only=True)
     username = fields.Str(required=True)
     email = fields.Str(required=True)
+    is_enabled = fields.Boolean()
     created_at = fields.DateTime()
     updated_at = fields.DateTime()
 
