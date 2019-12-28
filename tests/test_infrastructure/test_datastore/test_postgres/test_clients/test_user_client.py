@@ -33,7 +33,6 @@ async def test_select_where_paginated(db, user_pg_client):
 
 
 async def test_insert(db, user_pg_client):
-    # Get baseline
     old_user_count = len(await user_pg_client.select_where())
 
     new_user = User(username="test", email="test")
@@ -45,7 +44,6 @@ async def test_insert(db, user_pg_client):
 
 
 async def test_insert_duplicate_error(db, user_pg_client):
-    # Get baseline
     old_user_count = len(await user_pg_client.select_where())
 
     new_user = User(username="test", email="test")
@@ -82,7 +80,7 @@ async def test_update_where(db, user_pg_client):
         set_values={"is_enabled": False}, filters=[Filter("is_enabled", EQ, True)]
     )
 
-    # Check that all users are now disabled
+    # Check all users are now disabled
     new_disabled_user_count = len(
         await user_pg_client.select_where([Filter("is_enabled", EQ, False)])
     )

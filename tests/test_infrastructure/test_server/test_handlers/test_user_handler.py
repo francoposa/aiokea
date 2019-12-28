@@ -18,20 +18,20 @@ def test_valid_query_params(user_http_adapter):
     }
 
 
-# async def test_post_success(web_client, user_post):
-#
-#     # BASELINE
-#     resp = await web_client.get(USER_PATH)
-#     response_body = await resp.json()
-#     baseline_size = len(response_body["data"])
-#
-#     # POST
-#     resp = await web_client.post(USER_PATH, json=user_post)
-#     assert resp.status == 200
-#     new_user = (await resp.json())["data"]
-#     assert set(new_user) == key_set
-# a
-#     # NEW USER INSERTED
-#     resp = await web_client.get(USER_PATH)
-#     response_body = await resp.json()
-#     assert len(response_body["data"]) == baseline_size + 1
+async def test_post_success(http_client, user_post):
+    # GET baseline
+    response = await http_client.get(USER_PATH)
+    response_body = await response.json()
+    old_user_count = len(response_body["data"])
+
+    # POST new user
+    response = await http_client.post(USER_PATH, json=user_post)
+    assert response.status == 200
+    response_body = await response.json()
+    assert response_body["data"]["username"] == user_post["username"]
+    assert response_body["data"]["email"] == user_post["email"]
+
+    # Check new user was created
+    response = await http_client.get(USER_PATH)
+    response_body = await response.json()
+    assert len(response_body["data"]) == old_user_count + 1

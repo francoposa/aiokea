@@ -64,8 +64,10 @@ async def db(loop, engine, user_pg_client):
 
 
 @pytest.fixture
-def web_app(loop, user_pg_client):
-    async def startup_handler(app, user_http_adapter):
+def http_app(
+    loop, user_pg_client, user_http_adapter,
+):
+    async def startup_handler(app):
         # Register all routes
         setup_routes(app)
 
@@ -79,6 +81,6 @@ def web_app(loop, user_pg_client):
 
 
 @pytest.fixture
-async def web_client(aiohttp_client, web_app):
-    client = await aiohttp_client(web_app)
+async def http_client(aiohttp_client, http_app):
+    client = await aiohttp_client(http_app)
     return client
