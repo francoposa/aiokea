@@ -1,7 +1,7 @@
 from marshmallow import fields
 
 from app.infrastructure.server.http.adapters.base import BaseSchema, BaseHTTPAdapter
-from app.usecases.resources.user import User
+from app.entities.resources.user import User
 
 
 class UserSchema(BaseSchema):

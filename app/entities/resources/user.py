@@ -3,7 +3,7 @@ from datetime import datetime
 import attr
 from attr.validators import instance_of, optional
 
-from app.usecases.resources.utils import generate_uuid
+from app.entities.resources.utils import generate_uuid
 
 
 @attr.s(slots=True)

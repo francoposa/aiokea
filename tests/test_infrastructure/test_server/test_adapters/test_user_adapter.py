@@ -1,7 +1,7 @@
 import marshmallow
 import pytest
 
-from app.usecases.resources.user import User
+from app.entities.resources.user import User
 
 
 def test_mapping_to_usecase_success(user_http_adapter, user_post):

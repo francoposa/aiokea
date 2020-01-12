@@ -37,7 +37,7 @@ class HTTPHandler:
         self.id_field = id_field or "id"
 
     async def get_handler(self, request: web.Request) -> web.Response:
-        """GET handler to retrieve usecases."""
+        """GET handler to retrieve entities."""
         filters: List[Filter] = _query_to_filters(request.query, self.adapter)
         usecases = await self.db_client.select_where(filters=filters)
         response_data = [self.adapter.usecase_to_mapping(u) for u in usecases]

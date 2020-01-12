@@ -150,7 +150,7 @@ class PostgresClient:
         return self.usecase_class(**row_dict)
 
     def _serialize_for_db(self, usecase) -> Dict:
-        # at this point we're assuming attrs objects for usecases
+        # at this point we're assuming attrs objects for entities
         usecase_dict: Dict = attr.asdict(usecase)
         for db_generated_field in self.db_generated_fields:
             if usecase_dict.get(db_generated_field) is None:

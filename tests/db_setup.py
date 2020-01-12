@@ -1,4 +1,4 @@
-from app.usecases.resources.user import User
+from app.entities.resources.user import User
 
 stub_users = [
     User(username="domtoretto", email="americanmuscle@fastnfurious.com"),
