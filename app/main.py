@@ -22,8 +22,8 @@ def on_startup(conf: Mapping):
     async def startup_handler(app: web.Application) -> None:
         """Run all initialization tasks.
 
-        These are tasks that should be run after the event loop has been started but before the HTTP
-        server has been started.
+        These are tasks that should be run after the event loop has been started 
+        but before the HTTP server has been started.
         """
         pg_engine = await create_engine(**conf["postgres"])
         user_pg_client = UserPostgresClient(pg_engine)

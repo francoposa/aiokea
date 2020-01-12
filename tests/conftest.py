@@ -69,8 +69,8 @@ def http_app(
     async def startup_handler(app):
         """Run all initialization tasks.
 
-       These are tasks that should be run after the event loop has been started but before the HTTP
-       server has been started.
+       These are tasks that should be run after the event loop has been started
+       but before the HTTP server has been started.
        """
 
         # Users endpoint
