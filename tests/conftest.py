@@ -9,7 +9,7 @@ import tests.db_setup as db_setup
 from app.infrastructure.datastore.postgres.clients.user import UserPostgresClient
 from app.infrastructure.server.http.adapters.user import UserHTTPAdapter
 from app.infrastructure.server.http.handlers.handler_factory import HTTPHandler
-from app.infrastructure.server.http.routes import USER_NAME, USER_PATH
+from app.infrastructure.server.http.routes import USER_PATH
 
 
 @pytest.fixture
@@ -75,8 +75,8 @@ def http_app(
 
         # Users endpoint
         user_handler = HTTPHandler(db_client=user_pg_client, adapter=UserHTTPAdapter())
-        app.router.add_get(USER_PATH, user_handler.get_handler, name=USER_NAME)
-        app.router.add_post(USER_PATH, user_handler.post_handler, name=USER_NAME)
+        app.router.add_get(USER_PATH, user_handler.get_handler)
+        app.router.add_post(USER_PATH, user_handler.post_handler)
 
     app = web.Application()
     app.on_startup.append(startup_handler)

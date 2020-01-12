@@ -1,5 +1,8 @@
+import functools
+from functools import partial as python_partial
 from typing import Mapping, Type
 
+import attr
 from marshmallow import Schema, post_dump
 
 
@@ -27,7 +30,7 @@ class BaseHTTPAdapter:
         self.schema = schema
         self.usecase_class: Type = usecase_class
 
-    def mapping_to_usecase(self, mapping: Mapping, partial=False):
+    def mapping_to_usecase(self, mapping: Mapping):
         usecase_dict = self.schema.load(mapping)
         return self.usecase_class(**usecase_dict)
 

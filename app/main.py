@@ -13,7 +13,7 @@ from app.infrastructure.datastore.postgres.clients.user import UserPostgresClien
 from app.infrastructure.server.http.adapters.user import UserHTTPAdapter
 from app.infrastructure.server.http.handlers import health
 from app.infrastructure.server.http.handlers.handler_factory import HTTPHandler
-from app.infrastructure.server.http.routes import HEALTH_PATH, HEALTH_NAME, USER_PATH, USER_NAME
+from app.infrastructure.server.http.routes import HEALTH_PATH, HEALTH_NAME, USER_PATH, USER_ID_PATH
 
 
 def on_startup(conf: Mapping):
@@ -33,8 +33,9 @@ def on_startup(conf: Mapping):
 
         # Users endpoint
         user_handler = HTTPHandler(db_client=user_pg_client, adapter=UserHTTPAdapter())
-        app.router.add_get(USER_PATH, user_handler.get_handler, name=USER_NAME)
-        app.router.add_post(USER_PATH, user_handler.post_handler, name=USER_NAME)
+        app.router.add_get(USER_PATH, user_handler.get_handler)
+        app.router.add_post(USER_PATH, user_handler.post_handler)
+        app.router.add_patch(USER_ID_PATH, user_handler.patch_handler)
 
     return startup_handler
 

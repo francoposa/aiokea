@@ -63,8 +63,11 @@ class PostgresClient:
             .returning(*[column for column in self.table.columns])
         )
         async with self.engine.acquire() as conn:
-            results: ResultProxy = await conn.execute(update)
-            result = await results.fetchone()
+            try:
+                results: ResultProxy = await conn.execute(update)
+                result = await results.fetchone()
+            except psycopg2.errors.UniqueViolation as e:
+                raise self.DuplicateError(e)
         return await self._deserialize_from_db(result)
 
     async def update_where(self, set_values: Mapping, filters: List[Filter] = None):

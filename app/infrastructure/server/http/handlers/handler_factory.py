@@ -1,6 +1,6 @@
 import json
 import re
-from typing import Type, List, Set
+from typing import Type, List, Set, Mapping
 
 import attr
 import marshmallow
@@ -29,9 +29,19 @@ FILTER_KEY_REGEX = re.compile(r"\[(.*?)\]")
 
 
 class HTTPHandler:
-    def __init__(self, db_client, adapter: BaseHTTPAdapter):
+    def __init__(
+        self, db_client, adapter: BaseHTTPAdapter, id_field: str = None,
+    ):
         self.db_client = db_client
         self.adapter = adapter
+        self.id_field = id_field or "id"
+
+    async def get_handler(self, request: web.Request) -> web.Response:
+        """GET handler to retrieve usecases."""
+        filters: List[Filter] = _query_to_filters(request.query, self.adapter)
+        usecases = await self.db_client.select_where(filters=filters)
+        response_data = [self.adapter.usecase_to_mapping(u) for u in usecases]
+        return web.json_response({"data": response_data})
 
     async def post_handler(self, request: web.Request) -> web.Response:
         """POST handler to create a usecase."""
@@ -56,12 +66,65 @@ class HTTPHandler:
         response_data = self.adapter.usecase_to_mapping(usecase)
         return web.json_response({"data": response_data})
 
-    async def get_handler(self, request: web.Request) -> web.Response:
-        """GET handler to retrieve usecases."""
-        filters: List[Filter] = _query_to_filters(request.query, self.adapter)
-        usecases = await self.db_client.select_where(filters=filters)
-        response_data = [self.adapter.usecase_to_mapping(u) for u in usecases]
+    async def patch_handler(self, request: web.Request) -> web.Response:
+        """PATCH handler to create a usecase."""
+        id = request.match_info["id"]
+        id_filter = Filter(self.id_field, FilterOperators.EQ.value, id)
+        db_usecase = await self.db_client.select_first_where([id_filter])
+        if not db_usecase:
+            self._raise_usecase_not_found_for_id(id)
+        try:
+            request_data = await request.json()
+        except Exception:
+            raise web.HTTPBadRequest(text=json.dumps({"errors": ["The supplied JSON is invalid."]}))
+
+        try:
+            serialized_request_data: Mapping = self.adapter.schema.load(request_data, partial=True)
+        except marshmallow.exceptions.ValidationError as e:
+            error_list = [{k: v} for k, v in e.messages.items()]
+            raise web.HTTPUnprocessableEntity(
+                text=json.dumps({"errors": error_list}), content_type="application/json"
+            )
+
+        patchable_fields = self.adapter.schema.Meta.patchable_fields
+        for request_field, request_value in serialized_request_data.items():
+            if request_data.get(request_field) is not None:
+                # data serialized from request may have default or calculated
+                # fields set that were not actually sent in the patch request
+                if request_field not in patchable_fields:
+                    raise web.HTTPConflict(
+                        text=json.dumps(
+                            {
+                                "errors": [
+                                    f"Field {request_field} is not a patchable field of {self.adapter.schema.Meta.record_type}. Patchable fields are {patchable_fields}"
+                                ]
+                            }
+                        ),
+                        content_type="application/json",
+                    )
+                # Using evolve here ensures that validators & field generators are re-run
+                # on the new instance. Setattr or similar does not re-trigger attrs validation
+                db_usecase = attr.evolve(db_usecase, **{request_field: request_value})
+
+        try:
+            usecase = await self.db_client.update(db_usecase)
+        except PostgresClient.DuplicateError as e:
+            raise web.HTTPConflict(
+                text=json.dumps({"errors": [e.api_error]}), content_type="application/json"
+            )
+        response_data = self.adapter.usecase_to_mapping(usecase)
         return web.json_response({"data": response_data})
+
+    def _raise_usecase_not_found_for_id(self, id):
+        raise web.HTTPNotFound(
+            text=json.dumps(
+                {
+                    "errors": [
+                        f"No {self.adapter.schema.Meta.record_type} found with {self.id_field} {id}"
+                    ]
+                }
+            )
+        )
 
 
 def _query_to_filters(raw_query_map: MultiMapping, adapter: BaseHTTPAdapter) -> List[Filter]:
