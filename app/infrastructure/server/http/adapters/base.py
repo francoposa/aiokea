@@ -1,8 +1,5 @@
-import functools
-from functools import partial as python_partial
 from typing import Mapping, Type
 
-import attr
 from marshmallow import Schema, post_dump
 
 
