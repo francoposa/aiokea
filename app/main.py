@@ -12,7 +12,7 @@ from aiopg.sa import create_engine
 from app.infrastructure.datastore.postgres.clients.user import UserPostgresClient
 from app.infrastructure.server.http.adapters.user import UserHTTPAdapter
 from app.infrastructure.server.http.handlers import health
-from app.infrastructure.server.http.handlers.handler_factory import HTTPHandler
+from app.infrastructure.server.http.handlers.base import HTTPHandler
 from app.infrastructure.server.http.routes import HEALTH_PATH, HEALTH_NAME, USER_PATH, USER_ID_PATH
 
 

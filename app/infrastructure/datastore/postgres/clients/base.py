@@ -67,6 +67,7 @@ class PostgresClient:
                 results: ResultProxy = await conn.execute(update)
                 result = await results.fetchone()
             except psycopg2.errors.UniqueViolation as e:
+                # TODO possibly raise a more descriptive error
                 raise self.DuplicateError(e)
         return await self._deserialize_from_db(result)
 

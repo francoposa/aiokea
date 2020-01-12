@@ -1,6 +1,6 @@
 from app.infrastructure.server.http.routes import USER_PATH
 
-from app.infrastructure.server.http.handlers.handler_factory import _valid_query_params
+from app.infrastructure.server.http.handlers.base import _valid_query_params
 
 
 def test_valid_query_params(user_http_adapter):

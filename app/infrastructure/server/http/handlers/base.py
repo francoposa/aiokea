@@ -67,7 +67,7 @@ class HTTPHandler:
         return web.json_response({"data": response_data})
 
     async def patch_handler(self, request: web.Request) -> web.Response:
-        """PATCH handler to create a usecase."""
+        """PATCH handler to partially update a usecase."""
         id = request.match_info["id"]
         id_filter = Filter(self.id_field, FilterOperators.EQ.value, id)
         db_usecase = await self.db_client.select_first_where([id_filter])

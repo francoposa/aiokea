@@ -8,7 +8,7 @@ from aiopg.sa import create_engine, Engine
 import tests.db_setup as db_setup
 from app.infrastructure.datastore.postgres.clients.user import UserPostgresClient
 from app.infrastructure.server.http.adapters.user import UserHTTPAdapter
-from app.infrastructure.server.http.handlers.handler_factory import HTTPHandler
+from app.infrastructure.server.http.handlers.base import HTTPHandler
 from app.infrastructure.server.http.routes import USER_PATH
 
 
