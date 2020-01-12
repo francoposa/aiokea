@@ -10,7 +10,8 @@ class UserSchema(BaseSchema):
     class Meta:
         """Meta data for UserSchema."""
 
-        record_type_ = "user"
+        record_type = "user"
+        patchable_fields = ["username", "email", "is_enabled"]
 
     id = fields.Str(dump_only=True)
     username = fields.Str(required=True)

@@ -9,8 +9,7 @@ from multidict import MultiMapping
 
 from app.infrastructure.common.filters.filters import PaginationParams, Filter
 from app.infrastructure.common.filters.operators import EQ, FilterOperators
-from app.infrastructure.datastore.postgres.clients.base import BasePostgresClient
-from app.infrastructure.server.http.app_constants import DATABASE_CLIENT, HTTP_ADAPTER
+from app.infrastructure.datastore.postgres.clients.base import PostgresClient
 from app.infrastructure.server.http.adapters.base import BaseHTTPAdapter
 
 """
@@ -19,7 +18,7 @@ by HTTP requests and the attrs usecase types we have defined.
 
 Our database clients provide the same generality for database CRUD operations.
 
-The handler is only skeleton functionality that dictates when and how we use 
+The handler is only framework functionality that dictates when and how we use 
 the those adapters and clients, and is the only place where web requests and
 database operations are explicitly tied together.
 
@@ -29,52 +28,40 @@ This is what makes the app CRUD out of the box.
 FILTER_KEY_REGEX = re.compile(r"\[(.*?)\]")
 
 
-def post_handler_factory(usecase_class: Type):
-    """Create post handler coroutine to be called by aiohttp upon receipt of a POST request"""
+class HTTPHandler:
+    def __init__(self, db_client, adapter: BaseHTTPAdapter):
+        self.db_client = db_client
+        self.adapter = adapter
 
-    async def post_handler(request: web.Request) -> web.Response:
-        """POST handler for a usecase."""
-
-        db_client: BasePostgresClient = request.app[DATABASE_CLIENT][usecase_class]
-        adapter: BaseHTTPAdapter = request.app[HTTP_ADAPTER][usecase_class]
-
+    async def post_handler(self, request: web.Request) -> web.Response:
+        """POST handler to create a usecase."""
         try:
-            post_data = await request.json()
+            request_data = await request.json()
         except Exception:
             raise web.HTTPBadRequest(text=json.dumps({"errors": ["The supplied JSON is invalid."]}))
 
         try:
-            request_usecase = adapter.mapping_to_usecase(post_data)
+            request_usecase = self.adapter.mapping_to_usecase(request_data)
         except marshmallow.exceptions.ValidationError as e:
             error_list = [{k: v} for k, v in e.messages.items()]
             raise web.HTTPUnprocessableEntity(
                 text=json.dumps({"errors": error_list}), content_type="application/json"
             )
         try:
-            db_usecase = await db_client.insert(request_usecase)
-        except BasePostgresClient.DuplicateError as e:
+            usecase = await self.db_client.insert(request_usecase)
+        except PostgresClient.DuplicateError as e:
             raise web.HTTPConflict(
                 text=json.dumps({"errors": [e.api_error]}), content_type="application/json"
             )
-        response_data = adapter.usecase_to_mapping(db_usecase)
+        response_data = self.adapter.usecase_to_mapping(usecase)
         return web.json_response({"data": response_data})
 
-    return post_handler
-
-
-def get_handler_factory(usecase_class: Type):
-    """Create get handler coroutine to be called by aiohttp upon receipt of a GET request"""
-
-    async def get_handler(request: web.Request) -> web.Response:
-        """GET handler for a usecase."""
-        db_client: BasePostgresClient = request.app[DATABASE_CLIENT][usecase_class]
-        adapter: BaseHTTPAdapter = request.app[HTTP_ADAPTER][usecase_class]
-        filters: List[Filter] = _query_to_filters(request.query, adapter)
-        db_usecases = await db_client.select_where(filters=filters)
-        response_data = [adapter.usecase_to_mapping(u) for u in db_usecases]
+    async def get_handler(self, request: web.Request) -> web.Response:
+        """GET handler to retrieve usecases."""
+        filters: List[Filter] = _query_to_filters(request.query, self.adapter)
+        usecases = await self.db_client.select_where(filters=filters)
+        response_data = [self.adapter.usecase_to_mapping(u) for u in usecases]
         return web.json_response({"data": response_data})
-
-    return get_handler
 
 
 def _query_to_filters(raw_query_map: MultiMapping, adapter: BaseHTTPAdapter) -> List[Filter]:

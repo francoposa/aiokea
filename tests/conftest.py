@@ -7,10 +7,9 @@ from aiopg.sa import create_engine, Engine
 
 import tests.db_setup as db_setup
 from app.infrastructure.datastore.postgres.clients.user import UserPostgresClient
-from app.infrastructure.server.http import app_constants
 from app.infrastructure.server.http.adapters.user import UserHTTPAdapter
-from app.infrastructure.server.http.setup import register_dependency, setup_routes
-from app.usecases.resources.user import User
+from app.infrastructure.server.http.handlers.handler_factory import HTTPHandler
+from app.infrastructure.server.http.routes import USER_NAME, USER_PATH
 
 
 @pytest.fixture
@@ -68,12 +67,16 @@ def http_app(
     loop, user_pg_client, user_http_adapter,
 ):
     async def startup_handler(app):
-        # Register all routes
-        setup_routes(app)
+        """Run all initialization tasks.
 
-        # Register dependencies with the aiohttp app
-        register_dependency(app, app_constants.DATABASE_CLIENT, user_pg_client, User)
-        register_dependency(app, app_constants.HTTP_ADAPTER, user_http_adapter, User)
+       These are tasks that should be run after the event loop has been started but before the HTTP
+       server has been started.
+       """
+
+        # Users endpoint
+        user_handler = HTTPHandler(db_client=user_pg_client, adapter=UserHTTPAdapter())
+        app.router.add_get(USER_PATH, user_handler.get_handler, name=USER_NAME)
+        app.router.add_post(USER_PATH, user_handler.post_handler, name=USER_NAME)
 
     app = web.Application()
     app.on_startup.append(startup_handler)

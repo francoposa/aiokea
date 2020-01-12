@@ -11,12 +11,14 @@ class BaseSchema(Schema):
 
         ordered = True
         strict = True
-        record_type_ = None
+        record_type = None
+
+        patchable_fields = []
 
     @post_dump
     def tag_record_type(self, data, **kwargs):
-        """Adds record type field post-dump."""
-        data["record_type"] = self.Meta.record_type_
+        """Adds record type metadata post-dump."""
+        data["record_type"] = self.Meta.record_type
         return data
 
 
@@ -25,7 +27,7 @@ class BaseHTTPAdapter:
         self.schema = schema
         self.usecase_class: Type = usecase_class
 
-    def mapping_to_usecase(self, mapping: Mapping):
+    def mapping_to_usecase(self, mapping: Mapping, partial=False):
         usecase_dict = self.schema.load(mapping)
         return self.usecase_class(**usecase_dict)
 

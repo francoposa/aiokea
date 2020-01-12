@@ -1,8 +1,8 @@
-from app.infrastructure.datastore.postgres.clients.base import BasePostgresClient
+from app.infrastructure.datastore.postgres.clients.base import PostgresClient
 from app.infrastructure.datastore.postgres.tables import USER
 from app.usecases.resources.user import User
 
 
-class UserPostgresClient(BasePostgresClient):
+class UserPostgresClient(PostgresClient):
     def __init__(self, engine):
         super().__init__(User, engine, USER)

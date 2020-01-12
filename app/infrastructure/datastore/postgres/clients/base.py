@@ -1,5 +1,5 @@
 import datetime
-from typing import Dict, Iterable, Mapping, List
+from typing import Dict, Iterable, Mapping, List, Type
 
 import attr
 
@@ -19,13 +19,13 @@ from app.infrastructure.common.filters.operators import FilterOperators
 DEFAULT_PAGE_SIZE = 25
 
 
-class BasePostgresClient:
+class PostgresClient:
     class DuplicateError(Exception):
         api_error = "duplicate resource"
 
     def __init__(
         self,
-        usecase_class,
+        usecase_class: Type,
         engine: aiopg.sa.Engine,
         table: sa.Table,
         id_field: str = None,
@@ -52,8 +52,9 @@ class BasePostgresClient:
                 raise self.DuplicateError(e)
         return await self._deserialize_from_db(result)
 
-    async def update(self, id, usecase):
+    async def update(self, usecase):
         serialized_usecase: Dict = self._serialize_for_db(usecase)
+        id = serialized_usecase.get(self.id_field)
         id_filter = Filter(self.id_field, FilterOperators.EQ.value, id)
         where_clause: BinaryExpression = self._where_clause_from_filters([id_filter])
         update: Update = (
