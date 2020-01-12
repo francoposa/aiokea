@@ -1,4 +1,4 @@
-from typing import Mapping, Type
+from typing import Dict, Mapping, Type
 
 from marshmallow import Schema, post_dump
 
@@ -23,13 +23,13 @@ class BaseSchema(Schema):
 
 
 class BaseHTTPAdapter:
-    def __init__(self, schema: BaseSchema, usecase_class: Type):
+    def __init__(self, schema: BaseSchema, entity_class: Type):
         self.schema = schema
-        self.usecase_class: Type = usecase_class
+        self.entity_class: Type = entity_class
 
-    def mapping_to_usecase(self, mapping: Mapping):
-        usecase_dict = self.schema.load(mapping)
-        return self.usecase_class(**usecase_dict)
+    def mapping_to_entity(self, mapping: Mapping):
+        entity_data: Dict = self.schema.load(mapping)
+        return self.entity_class(**entity_data)
 
-    def usecase_to_mapping(self, usecase) -> Mapping:
-        return self.schema.dump(usecase)
+    def entity_to_mapping(self, entity) -> Mapping:
+        return self.schema.dump(entity)

@@ -1,11 +1,11 @@
 # aiohttp-postgres
-Asyncio Python CRUD app framework utilizing Clean Architecture concepts of Infrastructure, Usecases, and Adapters
+Asyncio Python CRUD app framework utilizing Clean Architecture concepts of Infrastructure, Entities, and Adapters
 
 This "framework" utilizes the following libraries:
 * aiohttp: async web framework
 * aiopg: async Postgres driver with SQLAlchemy support
-* attrs: easy creation and validation of usecase-layer objects
-* marshmallow: marshaling data between JSON web requests and usecase-layer objects
+* attrs: easy creation and validation of entity-layer objects
+* marshmallow: marshaling data between JSON web requests and entity-layer objects
 * alembic: database migration and schema management with SQLAlchemy support
  
 API Design

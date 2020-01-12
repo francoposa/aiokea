@@ -23,4 +23,4 @@ class UserSchema(BaseSchema):
 
 class UserHTTPAdapter(BaseHTTPAdapter):
     def __init__(self):
-        super().__init__(schema=UserSchema(), usecase_class=User)
+        super().__init__(schema=UserSchema(), entity_class=User)
