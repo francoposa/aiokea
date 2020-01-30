@@ -4,8 +4,8 @@ from app.infrastructure.server.http.handlers.base import _valid_query_params
 
 
 def test_valid_query_params(user_http_adapter):
-    user_entity_class = user_http_adapter.entity_class
-    valid_params = _valid_query_params(user_entity_class)
+    user_usecase_class = user_http_adapter.usecase_class
+    valid_params = _valid_query_params(user_usecase_class)
     assert valid_params == {
         "id",
         "username",

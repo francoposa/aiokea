@@ -1,7 +1,7 @@
 from marshmallow import fields
 
 from app.infrastructure.server.http.adapters.base import BaseSchema, BaseHTTPAdapter
-from app.entities.resources.user import User
+from app.usecases.resources.user import User
 
 
 class UserSchema(BaseSchema):
@@ -23,4 +23,4 @@ class UserSchema(BaseSchema):
 
 class UserHTTPAdapter(BaseHTTPAdapter):
     def __init__(self):
-        super().__init__(schema=UserSchema(), entity_class=User)
+        super().__init__(schema=UserSchema(), usecase_class=User)

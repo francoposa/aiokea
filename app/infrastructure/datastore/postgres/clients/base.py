@@ -25,23 +25,23 @@ class PostgresClient:
 
     def __init__(
         self,
-        entity_class: Type,
+        usecase_class: Type,
         engine: aiopg.sa.Engine,
         table: sa.Table,
         id_field: str = None,
         db_generated_fields: Iterable[str] = None,
     ):
-        self.entity_class = entity_class
+        self.usecase_class = usecase_class
         self.engine = engine
         self.table = table
         self.id_field = id_field or "id"
         self.db_generated_fields = db_generated_fields or ["created_at", "updated_at"]
 
-    async def insert(self, entity):
-        serialized_entity: Dict = self._serialize_for_db(entity)
+    async def insert(self, usecase):
+        serialized_usecase: Dict = self._serialize_for_db(usecase)
         insert: Insert = (
             self.table.insert()
-            .values(**serialized_entity)
+            .values(**serialized_usecase)
             .returning(*[column for column in self.table.columns])
         )
         async with self.engine.acquire() as conn:
@@ -52,14 +52,14 @@ class PostgresClient:
                 raise self.DuplicateError(e)
         return await self._deserialize_from_db(result)
 
-    async def update(self, entity):
-        serialized_entity: Dict = self._serialize_for_db(entity)
-        id = serialized_entity.get(self.id_field)
+    async def update(self, usecase):
+        serialized_usecase: Dict = self._serialize_for_db(usecase)
+        id = serialized_usecase.get(self.id_field)
         id_filter = Filter(self.id_field, FilterOperators.EQ.value, id)
         where_clause: BinaryExpression = self._where_clause_from_filters([id_filter])
         update: Update = (
             self.table.update(whereclause=where_clause)
-            .values(**serialized_entity)
+            .values(**serialized_usecase)
             .returning(*[column for column in self.table.columns])
         )
         async with self.engine.acquire() as conn:
@@ -147,21 +147,21 @@ class PostgresClient:
     async def _deserialize_from_db(self, row: RowProxy):
         # returns attrs object if successful
         row_dict = dict(row)
-        return self.entity_class(**row_dict)
+        return self.usecase_class(**row_dict)
 
-    def _serialize_for_db(self, entity) -> Dict:
-        # at this point we're assuming attrs objects for entities
-        entity_data: Dict = attr.asdict(entity)
+    def _serialize_for_db(self, usecase) -> Dict:
+        # at this point we're assuming attrs objects for usecases
+        usecase_data: Dict = attr.asdict(usecase)
         for db_generated_field in self.db_generated_fields:
-            if entity_data.get(db_generated_field) is None:
+            if usecase_data.get(db_generated_field) is None:
                 # inserting a non-nullable field with value None will result in a
                 # `psycopg2.IntegrityError: null value in column violates not-null constraint`
                 # we delete the value from the dict instead
-                del entity_data[db_generated_field]
-        for k, v in entity_data.items():
+                del usecase_data[db_generated_field]
+        for k, v in usecase_data.items():
             if isinstance(v, datetime.datetime):
-                entity_data[k]: str = v.isoformat()
-        return entity_data
+                usecase_data[k]: str = v.isoformat()
+        return usecase_data
 
 
 def _isiterable(var) -> bool:

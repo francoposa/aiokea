@@ -14,7 +14,7 @@ from app.infrastructure.server.http.adapters.base import BaseHTTPAdapter
 
 """
 Our adapters provide methods for marshalling data between the mapping types returned
-by HTTP requests and the attrs entity types we have defined.
+by HTTP requests and the attrs usecase types we have defined.
 
 Our database clients provide the same generality for database CRUD operations.
 
@@ -37,42 +37,42 @@ class HTTPHandler:
         self.id_field = id_field or "id"
 
     async def get_handler(self, request: web.Request) -> web.Response:
-        """GET handler to retrieve entities."""
+        """GET handler to retrieve usecases."""
         filters: List[Filter] = _query_to_filters(request.query, self.adapter)
-        entities = await self.db_client.select_where(filters=filters)
-        response_data = [self.adapter.entity_to_mapping(e) for e in entities]
+        usecases = await self.db_client.select_where(filters=filters)
+        response_data = [self.adapter.usecase_to_mapping(u) for u in usecases]
         return web.json_response({"data": response_data})
 
     async def post_handler(self, request: web.Request) -> web.Response:
-        """POST handler to create an entity."""
+        """POST handler to create an usecase."""
         try:
             request_data = await request.json()
         except Exception:
             raise web.HTTPBadRequest(text=json.dumps({"errors": ["The supplied JSON is invalid."]}))
 
         try:
-            request_entity = self.adapter.mapping_to_entity(request_data)
+            request_usecase = self.adapter.mapping_to_usecase(request_data)
         except marshmallow.exceptions.ValidationError as e:
             error_list = [{k: v} for k, v in e.messages.items()]
             raise web.HTTPUnprocessableEntity(
                 text=json.dumps({"errors": error_list}), content_type="application/json"
             )
         try:
-            entity = await self.db_client.insert(request_entity)
+            usecase = await self.db_client.insert(request_usecase)
         except PostgresClient.DuplicateError as e:
             raise web.HTTPConflict(
                 text=json.dumps({"errors": [e.api_error]}), content_type="application/json"
             )
-        response_data = self.adapter.entity_to_mapping(entity)
+        response_data = self.adapter.usecase_to_mapping(usecase)
         return web.json_response({"data": response_data})
 
     async def patch_handler(self, request: web.Request) -> web.Response:
-        """PATCH handler to partially update an entity."""
+        """PATCH handler to partially update an usecase."""
         id = request.match_info["id"]
         id_filter = Filter(self.id_field, FilterOperators.EQ.value, id)
-        db_entity = await self.db_client.select_first_where([id_filter])
-        if not db_entity:
-            self._raise_entity_not_found_for_id(id)
+        db_usecase = await self.db_client.select_first_where([id_filter])
+        if not db_usecase:
+            self._raise_usecase_not_found_for_id(id)
         try:
             request_data = await request.json()
         except Exception:
@@ -104,18 +104,18 @@ class HTTPHandler:
                     )
                 # Using evolve here ensures that validators & field generators are re-run
                 # on the new instance. Setattr or similar does not re-trigger attrs validation
-                db_entity = attr.evolve(db_entity, **{request_field: request_value})
+                db_usecase = attr.evolve(db_usecase, **{request_field: request_value})
 
         try:
-            entity = await self.db_client.update(db_entity)
+            usecase = await self.db_client.update(db_usecase)
         except PostgresClient.DuplicateError as e:
             raise web.HTTPConflict(
                 text=json.dumps({"errors": [e.api_error]}), content_type="application/json"
             )
-        response_data = self.adapter.entity_to_mapping(entity)
+        response_data = self.adapter.usecase_to_mapping(usecase)
         return web.json_response({"data": response_data})
 
-    def _raise_entity_not_found_for_id(self, id):
+    def _raise_usecase_not_found_for_id(self, id):
         raise web.HTTPNotFound(
             text=json.dumps(
                 {
@@ -128,7 +128,7 @@ class HTTPHandler:
 
 
 def _query_to_filters(raw_query_map: MultiMapping, adapter: BaseHTTPAdapter) -> List[Filter]:
-    valid_filter_fields: Set[str] = _valid_query_params(adapter.entity_class)
+    valid_filter_fields: Set[str] = _valid_query_params(adapter.usecase_class)
     valid_filter_operators: Set[str] = {item.value for item in FilterOperators}
     query_filters: List[Filter] = []
     for full_query_param in raw_query_map.keys():
@@ -154,9 +154,9 @@ def _query_to_filters(raw_query_map: MultiMapping, adapter: BaseHTTPAdapter) -> 
     return query_filters
 
 
-def _valid_query_params(entity_class: Type) -> Set[str]:
+def _valid_query_params(usecase_class: Type) -> Set[str]:
     valid_query_params = set()
-    for field in attr.fields(entity_class):
+    for field in attr.fields(usecase_class):
         valid_query_params.add(field.name)
     for item in PaginationParams:
         valid_query_params.add(item.value)

@@ -23,13 +23,13 @@ class BaseSchema(Schema):
 
 
 class BaseHTTPAdapter:
-    def __init__(self, schema: BaseSchema, entity_class: Type):
+    def __init__(self, schema: BaseSchema, usecase_class: Type):
         self.schema = schema
-        self.entity_class: Type = entity_class
+        self.usecase_class: Type = usecase_class
 
-    def mapping_to_entity(self, mapping: Mapping):
-        entity_data: Dict = self.schema.load(mapping)
-        return self.entity_class(**entity_data)
+    def mapping_to_usecase(self, mapping: Mapping):
+        usecase_data: Dict = self.schema.load(mapping)
+        return self.usecase_class(**usecase_data)
 
-    def entity_to_mapping(self, entity) -> Mapping:
-        return self.schema.dump(entity)
+    def usecase_to_mapping(self, usecase) -> Mapping:
+        return self.schema.dump(usecase)

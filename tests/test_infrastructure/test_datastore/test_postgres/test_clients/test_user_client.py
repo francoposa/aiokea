@@ -3,7 +3,7 @@ import pytest
 from app.infrastructure.common.filters.filters import Filter
 from app.infrastructure.common.filters.operators import EQ, NE
 from app.infrastructure.datastore.postgres.clients.base import PostgresClient
-from app.entities.resources.user import User
+from app.usecases.resources.user import User
 from tests import db_setup
 
 
