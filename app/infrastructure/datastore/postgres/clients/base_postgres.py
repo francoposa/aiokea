@@ -1,5 +1,5 @@
 import datetime
-from typing import Dict, Iterable, Mapping, List, Type
+from typing import Dict, Iterable, Mapping, List, Type, Optional
 
 import attr
 
@@ -15,33 +15,53 @@ from sqlalchemy.sql.schema import Column
 
 from app.infrastructure.common.filters.filters import Filter
 from app.infrastructure.common.filters.operators import FilterOperators
+from app.infrastructure.datastore.postgres.clients.abstract_base import IDBClient, Struct
 
 DEFAULT_PAGE_SIZE = 25
 
 
-class PostgresClient:
-    class DuplicateError(Exception):
-        api_error = "duplicate resource"
-
+class PostgresClient(IDBClient):
     def __init__(
         self,
-        usecase_class: Type,
+        struct_class: Type,
         engine: aiopg.sa.Engine,
         table: sa.Table,
         id_field: str = None,
         db_generated_fields: Iterable[str] = None,
     ):
-        self.usecase_class = usecase_class
+        self.struct_class = struct_class
         self.engine = engine
         self.table = table
         self.id_field = id_field or "id"
         self.db_generated_fields = db_generated_fields or ["created_at", "updated_at"]
 
-    async def insert(self, usecase):
-        serialized_usecase: Dict = self._serialize_for_db(usecase)
+    async def select_first_where(self, filters: List[Filter] = None) -> Optional[Struct]:
+        results = await self.select_where(filters=filters, page_size=1)
+        if results:
+            return results[0]
+        return None
+
+    async def select_where(
+        self,
+        filters: Optional[List[Filter]] = None,
+        page: Optional[int] = 0,
+        page_size: Optional[int] = None,
+    ) -> List[Struct]:
+        where_clause: BinaryExpression = self._where_clause_from_filters(
+            filters
+        ) if filters else None
+        select: Select = self.table.select(whereclause=where_clause)
+        page_size: int = page_size if page_size else DEFAULT_PAGE_SIZE
+        paginated_select: Select = self._paginate_query(select, page, page_size)
+        async with self.engine.acquire() as conn:
+            results: ResultProxy = await conn.execute(paginated_select)
+            return [await self._deserialize_from_db(result) async for result in results]
+
+    async def insert(self, struct: Struct) -> Struct:
+        serialized_struct: Dict = self._serialize_for_db(struct)
         insert: Insert = (
             self.table.insert()
-            .values(**serialized_usecase)
+            .values(**serialized_struct)
             .returning(*[column for column in self.table.columns])
         )
         async with self.engine.acquire() as conn:
@@ -52,14 +72,14 @@ class PostgresClient:
                 raise self.DuplicateError(e)
         return await self._deserialize_from_db(result)
 
-    async def update(self, usecase):
-        serialized_usecase: Dict = self._serialize_for_db(usecase)
-        id = serialized_usecase.get(self.id_field)
+    async def update(self, struct: Struct) -> Struct:
+        serialized_struct: Dict = self._serialize_for_db(struct)
+        id = serialized_struct.get(self.id_field)
         id_filter = Filter(self.id_field, FilterOperators.EQ.value, id)
         where_clause: BinaryExpression = self._where_clause_from_filters([id_filter])
         update: Update = (
             self.table.update(whereclause=where_clause)
-            .values(**serialized_usecase)
+            .values(**serialized_struct)
             .returning(*[column for column in self.table.columns])
         )
         async with self.engine.acquire() as conn:
@@ -71,7 +91,9 @@ class PostgresClient:
                 raise self.DuplicateError(e)
         return await self._deserialize_from_db(result)
 
-    async def update_where(self, set_values: Mapping, filters: List[Filter] = None):
+    async def update_where(
+        self, set_values: Mapping, filters: Optional[List[Filter]] = None
+    ) -> List[Struct]:
         where_clause: BinaryExpression = self._where_clause_from_filters(
             filters
         ) if filters else None
@@ -82,25 +104,12 @@ class PostgresClient:
             results: ResultProxy = await conn.execute(update)
             return [await self._deserialize_from_db(result) async for result in results]
 
-    async def select_first_where(self, filters: List[Filter] = None):
-        results = await self.select_where(filters=filters, page_size=1)
-        if results:
-            return results[0]
-        return None
-
-    async def select_where(self, filters: List[Filter] = None, page=0, page_size=None):
-        where_clause: BinaryExpression = self._where_clause_from_filters(
-            filters
-        ) if filters else None
-        select: Select = self.table.select(whereclause=where_clause)
-        page_size: int = page_size if page_size else DEFAULT_PAGE_SIZE
-        paginated_select: Select = self._paginate_query(select, page, page_size)
-        async with self.engine.acquire() as conn:
-            results: ResultProxy = await conn.execute(paginated_select)
-            return [await self._deserialize_from_db(result) async for result in results]
-
     def _generate_where_clause(self, include: Mapping = None, exclude: Mapping = None):
-        """Turn inclusion/exclusion maps into SQLAlchemy `where` clause"""
+        """Turn inclusion/exclusion maps into SQLAlchemy `where` clause
+
+        Deprecated in favor of the method that uses filters, but I don't want
+        to forget how I did this because it took awhile
+        """
         inclusion_ands = []
         exclusion_ands = []
         if include:
@@ -147,21 +156,21 @@ class PostgresClient:
     async def _deserialize_from_db(self, row: RowProxy):
         # returns attrs object if successful
         row_dict = dict(row)
-        return self.usecase_class(**row_dict)
+        return self.struct_class(**row_dict)
 
-    def _serialize_for_db(self, usecase) -> Dict:
-        # at this point we're assuming attrs objects for usecases
-        usecase_data: Dict = attr.asdict(usecase)
+    def _serialize_for_db(self, struct: Struct) -> Dict:
+        # at this point we're assuming attrs objects for structs
+        struct_data: Dict = attr.asdict(struct)
         for db_generated_field in self.db_generated_fields:
-            if usecase_data.get(db_generated_field) is None:
+            if struct_data.get(db_generated_field) is None:
                 # inserting a non-nullable field with value None will result in a
                 # `psycopg2.IntegrityError: null value in column violates not-null constraint`
                 # we delete the value from the dict instead
-                del usecase_data[db_generated_field]
-        for k, v in usecase_data.items():
+                del struct_data[db_generated_field]
+        for k, v in struct_data.items():
             if isinstance(v, datetime.datetime):
-                usecase_data[k]: str = v.isoformat()
-        return usecase_data
+                struct_data[k]: str = v.isoformat()
+        return struct_data
 
 
 def _isiterable(var) -> bool:

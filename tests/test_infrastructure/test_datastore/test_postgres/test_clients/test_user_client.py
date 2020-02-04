@@ -2,7 +2,7 @@ import pytest
 
 from app.infrastructure.common.filters.filters import Filter
 from app.infrastructure.common.filters.operators import EQ, NE
-from app.infrastructure.datastore.postgres.clients.base import PostgresClient
+from app.infrastructure.datastore.postgres.clients.base_postgres import PostgresClient
 from app.usecases.resources.user import User
 from tests import db_setup
 
