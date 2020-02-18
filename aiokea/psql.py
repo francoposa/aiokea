@@ -1,5 +1,5 @@
 import datetime
-from typing import Dict, Iterable, Mapping, List, Type, Optional
+from typing import Any, Dict, Iterable, List, Type, Optional
 
 import attr
 
@@ -9,8 +9,7 @@ import sqlalchemy as sa
 from aiopg.sa.result import ResultProxy, RowProxy
 from sqlalchemy.dialects.postgresql import Insert
 from sqlalchemy.sql.elements import BinaryExpression
-from sqlalchemy.sql.selectable import Select
-from sqlalchemy.sql import and_, Update
+from sqlalchemy.sql import and_, Select, Update
 from sqlalchemy.sql.schema import Column
 
 
@@ -33,6 +32,11 @@ class PostgresService(IService):
         self.table = table
         self.id_field = id_field or "id"
         self.db_generated_fields = db_generated_fields or ["created_at", "updated_at"]
+
+    async def get(self, id: Any) -> Struct:
+        return await self.get_first_where(
+            filters=[Filter(self.id_field, FilterOperators.EQ, id)]
+        )
 
     async def get_where(self, filters: Optional[List[Filter]] = None,) -> List[Struct]:
         where_clause: BinaryExpression = self._where_clause_from_filters(

@@ -21,9 +21,9 @@ class IService(ABC):
     Implementation details are yours to hide!
     """
 
-    # @abstractmethod
-    # async def get(self, id: Any) -> Optional[Struct]:
-    #     pass
+    @abstractmethod
+    async def get(self, id: Any) -> Optional[Struct]:
+        pass
 
     @abstractmethod
     async def get_where(
