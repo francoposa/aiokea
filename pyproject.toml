@@ -6,12 +6,16 @@ authors = ["francojposa <francojposa@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = ">=3.6"
+aiohttp = "^3.6.2"
 aiopg = "^1.0.0"
+sqlalchemy = "^1.3.13"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
 black = "^19.10b0"
 pytest-cov = "^2.8.1"
+alembic = "^1.4.0"
+pytest-aiohttp = "^0.3.0"
 
 [build-system]
 requires = ["poetry>=0.12"]

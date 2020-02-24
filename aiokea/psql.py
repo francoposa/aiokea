@@ -38,7 +38,7 @@ class PostgresService(IService):
             filters=[Filter(self.id_field, FilterOperators.EQ, id)]
         )
 
-    async def get_where(self, filters: Optional[List[Filter]] = None,) -> List[Struct]:
+    async def get_where(self, filters: Optional[List[Filter]] = None) -> List[Struct]:
         where_clause: BinaryExpression = self._where_clause_from_filters(
             filters
         ) if filters else None
@@ -81,6 +81,36 @@ class PostgresService(IService):
         update: Update = (
             self.table.update(whereclause=where_clause)
             .values(**serialized_struct)
+            .returning(*[column for column in self.table.columns])
+        )
+        async with self.engine.acquire() as conn:
+            try:
+                results: ResultProxy = await conn.execute(update)
+                result = await results.fetchone()
+            except psycopg2.errors.UniqueViolation as e:
+                # TODO possibly raise a more descriptive error
+                raise DuplicateResourceError(e)
+        return await self._load_to_struct(result)
+
+    async def partial_update(self, id: Any, **kwargs) -> Struct:
+        id_filter = Filter(self.id_field, FilterOperators.EQ, id)
+        current_resource: Struct = await self.get_first_where(filters=[id_filter])
+
+        attributes: Dict = vars(current_resource)
+        for key, value in kwargs.items():
+            attributes[key] = value
+
+        # Create new struct first instead of throwing attributes in database directly
+        # so any validation or field generation in the struct's __init__ will run again
+        unsaved_updated_struct: Struct = self.struct_class(**attributes)
+        serialized_unsaved_updated_struct: Dict = self._dump_from_struct(
+            unsaved_updated_struct
+        )
+
+        where_clause: BinaryExpression = self._where_clause_from_filters([id_filter])
+        update: Update = (
+            self.table.update(whereclause=where_clause)
+            .values(**serialized_unsaved_updated_struct)
             .returning(*[column for column in self.table.columns])
         )
         async with self.engine.acquire() as conn:

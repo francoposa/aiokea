@@ -27,7 +27,7 @@ class IService(ABC):
 
     @abstractmethod
     async def get_where(
-        self, filters: Optional[Sequence[Filter]] = None,
+        self, filters: Optional[Sequence[Filter]] = None
     ) -> Sequence[Struct]:
         pass
 
@@ -35,9 +35,9 @@ class IService(ABC):
     async def create(self, struct: Struct) -> Struct:
         pass
 
-    # @abstractmethod
-    # async def partial_update(self, id: Any, **kwargs) -> Sequence[Struct]:
-    #     pass
+    @abstractmethod
+    async def partial_update(self, id: Any, **kwargs) -> Struct:
+        pass
 
     @abstractmethod
     async def update(self, struct: Struct) -> Struct:

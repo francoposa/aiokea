@@ -99,6 +99,22 @@ async def test_update(psql_db, psql_user_service):
     assert updated_roman.username == "bigassforehead"
 
 
+async def test_partial_update(psql_db, psql_user_service):
+    # Get an existing user
+    roman: User = await psql_user_service.get_first_where(
+        [Filter("username", EQ, "roman")]
+    )
+    # roman.username = "bigassforehead"
+    # Update the user
+    await psql_user_service.partial_update(roman.id, username="bigassforehead")
+
+    # Check that the user has been updated
+    updated_roman: User = await psql_user_service.get_first_where(
+        [Filter("id", EQ, roman.id)]
+    )
+    assert updated_roman.username == "bigassforehead"
+
+
 async def test_update_where(psql_db, psql_user_service):
     # Get baseline
     user_count = len(await psql_user_service.get_where())
