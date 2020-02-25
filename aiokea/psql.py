@@ -94,15 +94,11 @@ class PostgresService(IService):
 
     async def partial_update(self, id: Any, **kwargs) -> Struct:
         id_filter = Filter(self.id_field, FilterOperators.EQ, id)
-        current_resource: Struct = await self.get_first_where(filters=[id_filter])
+        current_struct: Struct = await self.get_first_where(filters=[id_filter])
 
-        attributes: Dict = vars(current_resource)
-        for key, value in kwargs.items():
-            attributes[key] = value
-
-        # Create new struct first instead of throwing attributes in database directly
-        # so any validation or field generation in the struct's __init__ will run again
-        unsaved_updated_struct: Struct = self.struct_class(**attributes)
+        # Use attr.evolve to ensure validation & field generation/calculation
+        # is re-run, and to handle case of frozen classes
+        unsaved_updated_struct: Struct = attr.evolve(current_struct, **kwargs)
         serialized_unsaved_updated_struct: Dict = self._dump_from_struct(
             unsaved_updated_struct
         )
@@ -146,14 +142,12 @@ class PostgresService(IService):
                 ne_ands.append(table_col != filter.value)
         return and_(*eq_ands, *ne_ands)
 
-    async def _load_to_struct(self, result: RowProxy) -> Struct:
+    async def _load_to_struct(self, record: RowProxy) -> Struct:
         # returns attrs object if successful
-        row_dict = dict(result)
+        row_dict = dict(record)
         return self.struct_class(**row_dict)
 
     def _dump_from_struct(self, struct: Struct) -> Dict:
-        # FIXME: allow non-attrs dump to dict.. i think with vars()?
-        # at this point we're assuming attrs objects for structs
         struct_data: Dict = attr.asdict(struct)
         for db_generated_field in self.db_generated_fields:
             if struct_data.get(db_generated_field) is None:

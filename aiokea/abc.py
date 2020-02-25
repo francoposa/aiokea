@@ -1,12 +1,14 @@
 from abc import ABC, abstractmethod
 from typing import Any, Optional, Sequence
 
+import attr
+
 from aiokea.filters import Filter
 
 
+@attr.s
 class Struct(ABC):
-    class Meta:
-        id_field = "id"
+    pass
 
 
 class IService(ABC):
