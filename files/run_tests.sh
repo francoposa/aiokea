@@ -1,1 +1,1 @@
-pytest -p no:warnings tests/
+pytest -p no:warnings tests/ --cov=aiokea

@@ -1,5 +1,5 @@
 import datetime
-from typing import Any, Dict, Iterable, List, Type, Optional
+from typing import Any, Dict, Iterable, Sequence, Type, Optional
 
 import attr
 
@@ -9,12 +9,12 @@ import sqlalchemy as sa
 from aiopg.sa.result import ResultProxy, RowProxy
 from sqlalchemy.dialects.postgresql import Insert
 from sqlalchemy.sql.elements import BinaryExpression
-from sqlalchemy.sql import and_, Select, Update
+from sqlalchemy.sql import and_, Select, Update, Delete
 from sqlalchemy.sql.schema import Column
 
 
 from aiokea.abc import IService, Struct
-from aiokea.errors import DuplicateResourceError
+from aiokea.errors import DuplicateResourceError, ResourceNotFoundError
 from aiokea.filters import Filter, FilterOperators
 
 
@@ -34,11 +34,19 @@ class PostgresService(IService):
         self.db_generated_fields = db_generated_fields or ["created_at", "updated_at"]
 
     async def get(self, id: Any) -> Struct:
-        return await self.get_first_where(
-            filters=[Filter(self.id_field, FilterOperators.EQ, id)]
-        )
+        where_clause: BinaryExpression = self._where_clause_by_id(id)
+        select: Select = self.table.select(whereclause=where_clause).limit(1)
+        async with self.engine.acquire() as conn:
+            results: ResultProxy = await conn.execute(select)
+            if results.rowcount:
+                return await self._load_to_struct(await results.first())
+            raise ResourceNotFoundError(
+                f"No {self.struct_class.__name__} found with {self.id_field} {id}"
+            )
 
-    async def get_where(self, filters: Optional[List[Filter]] = None) -> List[Struct]:
+    async def get_where(
+        self, filters: Optional[Sequence[Filter]] = None
+    ) -> Sequence[Struct]:
         where_clause: BinaryExpression = self._where_clause_from_filters(
             filters
         ) if filters else None
@@ -47,14 +55,16 @@ class PostgresService(IService):
             results: ResultProxy = await conn.execute(select)
             return [await self._load_to_struct(result) async for result in results]
 
-    async def get_first_where(self, filters: List[Filter] = None) -> Optional[Struct]:
+    async def get_first_where(
+        self, filters: Optional[Sequence[Filter]] = None
+    ) -> Optional[Struct]:
         where_clause: BinaryExpression = self._where_clause_from_filters(
             filters
         ) if filters else None
         select: Select = self.table.select(whereclause=where_clause).limit(1)
         async with self.engine.acquire() as conn:
             results: ResultProxy = await conn.execute(select)
-            if results:
+            if results.rowcount:
                 return await self._load_to_struct(await results.first())
             return None
 
@@ -74,10 +84,12 @@ class PostgresService(IService):
         return await self._load_to_struct(result)
 
     async def update(self, struct: Struct) -> Struct:
+        id = getattr(struct, self.id_field)
+        # Call get to make sure the resource exists; will throw error if not
+        _ = await self.get(id=id)
+
         serialized_struct: Dict = self._dump_from_struct(struct)
-        id = serialized_struct.get(self.id_field)
-        id_filter = Filter(self.id_field, FilterOperators.EQ, id)
-        where_clause: BinaryExpression = self._where_clause_from_filters([id_filter])
+        where_clause: BinaryExpression = self._where_clause_by_id(id)
         update: Update = (
             self.table.update(whereclause=where_clause)
             .values(**serialized_struct)
@@ -93,20 +105,17 @@ class PostgresService(IService):
         return await self._load_to_struct(result)
 
     async def partial_update(self, id: Any, **kwargs) -> Struct:
-        id_filter = Filter(self.id_field, FilterOperators.EQ, id)
-        current_struct: Struct = await self.get_first_where(filters=[id_filter])
+        current_struct: Struct = await self.get(id=id)
 
         # Use attr.evolve to ensure validation & field generation/calculation
         # is re-run, and to handle case of frozen classes
-        unsaved_updated_struct: Struct = attr.evolve(current_struct, **kwargs)
-        serialized_unsaved_updated_struct: Dict = self._dump_from_struct(
-            unsaved_updated_struct
-        )
+        updated_struct: Struct = attr.evolve(current_struct, **kwargs)
+        serialized_updated_struct: Dict = self._dump_from_struct(updated_struct)
 
-        where_clause: BinaryExpression = self._where_clause_from_filters([id_filter])
+        where_clause: BinaryExpression = self._where_clause_by_id(id)
         update: Update = (
             self.table.update(whereclause=where_clause)
-            .values(**serialized_unsaved_updated_struct)
+            .values(**serialized_updated_struct)
             .returning(*[column for column in self.table.columns])
         )
         async with self.engine.acquire() as conn:
@@ -119,19 +128,44 @@ class PostgresService(IService):
         return await self._load_to_struct(result)
 
     async def update_where(
-        self, filters: Optional[List[Filter]] = None, **kwargs
-    ) -> List[Struct]:
+        self, filters: Optional[Sequence[Filter]] = None, **kwargs
+    ) -> Sequence[Struct]:
         where_clause: BinaryExpression = self._where_clause_from_filters(
             filters
         ) if filters else None
-        update: Update = self.table.update(whereclause=where_clause).values(
-            **kwargs
-        ).returning(*[column for column in self.table.columns])
+        update: Update = (
+            self.table.update(whereclause=where_clause)
+            .values(**kwargs)
+            .returning(*[column for column in self.table.columns])
+        )
         async with self.engine.acquire() as conn:
             results: ResultProxy = await conn.execute(update)
             return [await self._load_to_struct(result) async for result in results]
 
-    def _where_clause_from_filters(self, filters: List[Filter]):
+    async def delete(self, id: Any) -> Struct:
+        # Call get to make sure the resource exists; will throw error if not
+        _ = await self.get(id=id)
+
+        where_clause: BinaryExpression = self._where_clause_by_id(id)
+        delete: Delete = (
+            self.table.delete(whereclause=where_clause).returning(
+                *[column for column in self.table.columns]
+            )
+        )
+        async with self.engine.acquire() as conn:
+            try:
+                results: ResultProxy = await conn.execute(delete)
+                result = await results.fetchone()
+            except psycopg2.errors.UniqueViolation as e:
+                # TODO possibly raise a more descriptive error
+                raise DuplicateResourceError(e)
+        return await self._load_to_struct(result)
+
+    def _where_clause_by_id(self, id: Any) -> BinaryExpression:
+        id_filter = Filter(self.id_field, FilterOperators.EQ, id)
+        return self._where_clause_from_filters([id_filter])
+
+    def _where_clause_from_filters(self, filters: Sequence[Filter]) -> BinaryExpression:
         eq_ands = []
         ne_ands = []
         for filter in filters:
