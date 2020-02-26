@@ -8,7 +8,7 @@ from alembic import context
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
-from tests.stubs.users.service import METADATA
+from tests.stubs.users.repo import METADATA
 
 config = context.config
 

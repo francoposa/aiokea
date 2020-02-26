@@ -4,7 +4,7 @@ import pytest
 from aiopg.sa import create_engine, Engine
 
 from tests import pg_setup
-from tests.stubs.users.service import PostgresUserService, USER
+from tests.stubs.users.repo import PostgresUserRepo, USER
 
 
 @pytest.fixture
@@ -20,15 +20,15 @@ async def engine() -> Engine:
 
 
 @pytest.fixture
-async def psql_user_service(engine):
-    pg = PostgresUserService(engine)
+async def psql_user_repo(engine):
+    pg = PostgresUserRepo(engine)
     yield pg
     pg.engine.close()
     await pg.engine.wait_closed()
 
 
 @pytest.fixture
-async def psql_db(loop, engine, psql_user_service):
+async def psql_db(loop, engine, psql_user_repo):
 
     tables = [USER]
 
@@ -36,7 +36,7 @@ async def psql_db(loop, engine, psql_user_service):
         async with engine.acquire() as conn:
             await conn.execute("TRUNCATE TABLE {0} CASCADE".format(table.name))
 
-    await pg_setup.setup_db(psql_user_service)
+    await pg_setup.setup_db(psql_user_repo)
     yield
 
     for table in tables:

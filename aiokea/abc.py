@@ -20,7 +20,12 @@ class IService(ABC):
     the provided methods are appropriate, such as a REST API,
     relational DB, document DB, file system, in-memory map/tree, etc.
 
-    Implementation details are yours to hide!
+    While you could provide an IService interface for many types of
+    infrastructure components, it is meant to most closely resemble
+    operations and behavior available from a REST API.
+    As such, each call to an IService method is assumed to be an atomic
+    operation. IService is not intended to provide the ability to batch up
+    multiple method calls as a single atomic operation.
     """
 
     @abstractmethod
@@ -54,3 +59,15 @@ class IService(ABC):
     @abstractmethod
     async def delete(self, id: Any) -> Struct:
         pass
+
+
+class IRepo(IService):
+    """
+    IRepo extends IService to offer behaviors generally expected from
+    database systems, such as the ability to execute multiple operations
+    within an atomic transaction, or the ability to perform batch updates
+    or deletes based on filter criteria.
+
+    Implementations of IRepo do not necessarily have to be backed by a database,
+    as long as the implementation fulfills the expected atomic-transactional behavior
+    """

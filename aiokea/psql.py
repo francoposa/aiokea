@@ -13,12 +13,12 @@ from sqlalchemy.sql import and_, Select, Update, Delete
 from sqlalchemy.sql.schema import Column
 
 
-from aiokea.abc import IService, Struct
+from aiokea.abc import IRepo, Struct
 from aiokea.errors import DuplicateResourceError, ResourceNotFoundError
 from aiokea.filters import Filter, FilterOperators
 
 
-class PostgresService(IService):
+class PostgresRepo(IRepo):
     def __init__(
         self,
         struct_class: Type,
