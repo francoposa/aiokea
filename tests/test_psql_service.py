@@ -167,6 +167,12 @@ async def test_delete(psql_db, psql_user_service):
     new_users: Sequence[User] = await psql_user_service.get_where()
     assert deleted_user not in new_users
 
-    # Assert we have one less user in the repo
+    # Assert we have one fewer user in the repo
     new_user_count = len(new_users)
     assert new_user_count == old_user_count - 1
+
+
+async def test_delete_not_found(psql_db, psql_user_service):
+    # Attempt to delete user by nonexistent ID
+    with pytest.raises(ResourceNotFoundError):
+        _ = await psql_user_service.delete(id="xxx")
