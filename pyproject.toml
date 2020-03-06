@@ -16,6 +16,7 @@ pytest = "^5.2"
 pytest-aiohttp = "^0.3.0"
 pytest-cov = "^2.8.1"
 black = "^19.10b0"
+aiokea = "^0.1.0-alpha.0"
 
 [tool.poetry.dev-dependencies]
 

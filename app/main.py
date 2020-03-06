@@ -9,11 +9,16 @@ from aiohttp import web
 from aiopg.sa import create_engine
 
 
-from app.infrastructure.datastore.postgres.clients.user import UserPostgresClient
+from app.infrastructure.datastore.postgres.user_repo import PostgresUserRepo
 from app.infrastructure.server.http.adapters.user import UserHTTPAdapter
 from app.infrastructure.server.http.handlers import health
 from app.infrastructure.server.http.handlers.base import HTTPHandler
-from app.infrastructure.server.http.routes import HEALTH_PATH, HEALTH_NAME, USER_PATH, USER_ID_PATH
+from app.infrastructure.server.http.routes import (
+    HEALTH_PATH,
+    HEALTH_NAME,
+    USER_PATH,
+    USER_ID_PATH,
+)
 
 
 def on_startup(conf: Mapping):
@@ -26,7 +31,7 @@ def on_startup(conf: Mapping):
         but before the HTTP server has been started.
         """
         pg_engine = await create_engine(**conf["postgres"])
-        user_pg_client = UserPostgresClient(pg_engine)
+        user_pg_client = PostgresUserRepo(pg_engine)
 
         # Health check
         app.router.add_get(HEALTH_PATH, health.health_check, name=HEALTH_NAME)

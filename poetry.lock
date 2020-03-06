@@ -29,6 +29,19 @@ aiohttp = ">=1.1"
 
 [[package]]
 category = "main"
+description = ""
+name = "aiokea"
+optional = false
+python-versions = ">=3.6"
+version = "0.1.0a0"
+
+[package.dependencies]
+aiohttp = ">=3.6.2,<4.0.0"
+aiopg = ">=1.0.0,<2.0.0"
+sqlalchemy = ">=1.3.13,<2.0.0"
+
+[[package]]
+category = "main"
 description = "Postgres integration with asyncio."
 name = "aiopg"
 optional = false
@@ -348,7 +361,7 @@ description = "Database Abstraction Library"
 name = "sqlalchemy"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-version = "1.3.11"
+version = "1.3.13"
 
 [package.extras]
 mssql = ["pyodbc"]
@@ -399,7 +412,7 @@ idna = ">=2.0"
 multidict = ">=4.0"
 
 [metadata]
-content-hash = "acb03c73fbf9ca3b5023728c1771910e17e7b0d1ad3f953bb1e96b8b5bc78933"
+content-hash = "39a0ac1972fef42b878370be163436fa924eff27502e09e3b7cde28cd41809a5"
 python-versions = "^3.8"
 
 [metadata.files]
@@ -420,6 +433,10 @@ aiohttp = [
 aiohttp-cors = [
     {file = "aiohttp-cors-0.7.0.tar.gz", hash = "sha256:4d39c6d7100fd9764ed1caf8cebf0eb01bf5e3f24e2e073fda6234bc48b19f5d"},
     {file = "aiohttp_cors-0.7.0-py3-none-any.whl", hash = "sha256:0451ba59fdf6909d0e2cd21e4c0a43752bc0703d33fc78ae94d9d9321710193e"},
+]
+aiokea = [
+    {file = "aiokea-0.1.0a0-py3-none-any.whl", hash = "sha256:0420b8d03c0223415ad5f90bfdc4fe70ea6dbc68351c17397bf68d02996a2955"},
+    {file = "aiokea-0.1.0a0.tar.gz", hash = "sha256:270cf050924bd6be146617bf3bdd91358c7c2c1e37bb3c3f9911729e3217d217"},
 ]
 aiopg = [
     {file = "aiopg-1.0.0-py3-none-any.whl", hash = "sha256:5da7763028b735ebc4c2980ba39ef1ce4f48df1fc05900e036674edd50f0727c"},
@@ -652,7 +669,7 @@ six = [
     {file = "six-1.13.0.tar.gz", hash = "sha256:30f610279e8b2578cab6db20741130331735c781b56053c59c4076da27f06b66"},
 ]
 sqlalchemy = [
-    {file = "SQLAlchemy-1.3.11.tar.gz", hash = "sha256:afa5541e9dea8ad0014251bc9d56171ca3d8b130c9627c6cb3681cff30be3f8a"},
+    {file = "SQLAlchemy-1.3.13.tar.gz", hash = "sha256:64a7b71846db6423807e96820993fa12a03b89127d278290ca25c0b11ed7b4fb"},
 ]
 toml = [
     {file = "toml-0.10.0-py2.7.egg", hash = "sha256:f1db651f9657708513243e61e6cc67d101a39bad662eaa9b5546f789338e07a3"},

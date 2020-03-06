@@ -5,11 +5,11 @@ from typing import Type, List, Set, Mapping
 import attr
 import marshmallow
 from aiohttp import web
+from aiokea.errors import DuplicateResourceError
 from multidict import MultiMapping
 
 from app.infrastructure.common.filters.filters import PaginationParams, Filter
 from app.infrastructure.common.filters.operators import EQ, FilterOperators
-from app.infrastructure.datastore.postgres.clients.base_postgres import PostgresClient
 from app.infrastructure.server.http.adapters.base import BaseHTTPAdapter
 
 """
@@ -39,7 +39,7 @@ class HTTPHandler:
     async def get_handler(self, request: web.Request) -> web.Response:
         """GET handler to retrieve usecases."""
         filters: List[Filter] = _query_to_filters(request.query, self.adapter)
-        usecases = await self.db_client.select_where(filters=filters)
+        usecases = await self.db_client.get_where(filters=filters)
         response_data = [self.adapter.usecase_to_mapping(u) for u in usecases]
         return web.json_response({"data": response_data})
 
@@ -48,7 +48,9 @@ class HTTPHandler:
         try:
             request_data = await request.json()
         except Exception:
-            raise web.HTTPBadRequest(text=json.dumps({"errors": ["The supplied JSON is invalid."]}))
+            raise web.HTTPBadRequest(
+                text=json.dumps({"errors": ["The supplied JSON is invalid."]})
+            )
 
         try:
             request_usecase = self.adapter.mapping_to_usecase(request_data)
@@ -58,10 +60,11 @@ class HTTPHandler:
                 text=json.dumps({"errors": error_list}), content_type="application/json"
             )
         try:
-            usecase = await self.db_client.insert(request_usecase)
-        except PostgresClient.DuplicateError as e:
+            usecase = await self.db_client.create(request_usecase)
+        except DuplicateResourceError as e:
             raise web.HTTPConflict(
-                text=json.dumps({"errors": [e.api_error]}), content_type="application/json"
+                text=json.dumps({"errors": [e.error_msg]}),
+                content_type="application/json",
             )
         response_data = self.adapter.usecase_to_mapping(usecase)
         return web.json_response({"data": response_data})
@@ -70,16 +73,20 @@ class HTTPHandler:
         """PATCH handler to partially update an usecase."""
         id = request.match_info["id"]
         id_filter = Filter(self.id_field, FilterOperators.EQ.value, id)
-        db_usecase = await self.db_client.select_first_where([id_filter])
+        db_usecase = await self.db_client.get_first_where([id_filter])
         if not db_usecase:
             self._raise_usecase_not_found_for_id(id)
         try:
             request_data = await request.json()
         except Exception:
-            raise web.HTTPBadRequest(text=json.dumps({"errors": ["The supplied JSON is invalid."]}))
+            raise web.HTTPBadRequest(
+                text=json.dumps({"errors": ["The supplied JSON is invalid."]})
+            )
 
         try:
-            serialized_request_data: Mapping = self.adapter.schema.load(request_data, partial=True)
+            serialized_request_data: Mapping = self.adapter.schema.load(
+                request_data, partial=True
+            )
         except marshmallow.exceptions.ValidationError as e:
             error_list = [{k: v} for k, v in e.messages.items()]
             raise web.HTTPUnprocessableEntity(
@@ -108,9 +115,10 @@ class HTTPHandler:
 
         try:
             usecase = await self.db_client.update(db_usecase)
-        except PostgresClient.DuplicateError as e:
+        except DuplicateResourceError as e:
             raise web.HTTPConflict(
-                text=json.dumps({"errors": [e.api_error]}), content_type="application/json"
+                text=json.dumps({"errors": [e.error_msg]}),
+                content_type="application/json",
             )
         response_data = self.adapter.usecase_to_mapping(usecase)
         return web.json_response({"data": response_data})
@@ -127,7 +135,9 @@ class HTTPHandler:
         )
 
 
-def _query_to_filters(raw_query_map: MultiMapping, adapter: BaseHTTPAdapter) -> List[Filter]:
+def _query_to_filters(
+    raw_query_map: MultiMapping, adapter: BaseHTTPAdapter
+) -> List[Filter]:
     valid_filter_fields: Set[str] = _valid_query_params(adapter.usecase_class)
     valid_filter_operators: Set[str] = {item.value for item in FilterOperators}
     query_filters: List[Filter] = []

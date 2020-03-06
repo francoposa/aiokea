@@ -11,4 +11,4 @@ stub_users = [
 async def setup_db(user_pg_client):
 
     for user in stub_users:
-        await user_pg_client.insert(user)
+        await user_pg_client.create(user)

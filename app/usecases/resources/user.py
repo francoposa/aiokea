@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 
 import attr
@@ -13,7 +14,7 @@ class User:
     email = attr.ib(validator=instance_of(str))
 
     # Auto-generated on creation of usecase object
-    id = attr.ib(validator=instance_of(str), default=attr.Factory(generate_uuid))
+    id = attr.ib(validator=instance_of(str))
     is_enabled = attr.ib(validator=instance_of(bool), default=True)
 
     # DB auto created
@@ -22,3 +23,7 @@ class User:
     # Usecase objects that are deserialized from the datastore will then have these fields set
     created_at = attr.ib(validator=optional(instance_of(datetime)), default=None)
     updated_at = attr.ib(validator=optional(instance_of(datetime)), default=None)
+
+    @id.default
+    def generate_uuid(self) -> str:
+        return str(uuid.uuid4())
