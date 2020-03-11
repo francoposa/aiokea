@@ -1,10 +1,22 @@
+import json
 import os
 
 import pytest
 from aiopg.sa import create_engine, Engine
 
 from tests import pg_setup
+from tests.stubs.users.adapter import UserHTTPAdapter
 from tests.stubs.users.repo import PostgresUserRepo, USER
+
+
+@pytest.fixture
+def user_http_adapter():
+    return UserHTTPAdapter()
+
+
+@pytest.fixture
+def user_post():
+    return json.load(open("./tests/stubs/users/json/POST.json"))
 
 
 @pytest.fixture

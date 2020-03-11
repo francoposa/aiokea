@@ -39,7 +39,7 @@ class PostgresRepo(IRepo):
         async with self.engine.acquire() as conn:
             results: ResultProxy = await conn.execute(select)
             if results.rowcount:
-                return await self._load_to_struct(await results.first())
+                return await self.load_to_struct(await results.first())
             raise ResourceNotFoundError(
                 f"No {self.struct_class.__name__} found with {self.id_field} {id}"
             )
@@ -53,7 +53,7 @@ class PostgresRepo(IRepo):
         select: Select = self.table.select(whereclause=where_clause)
         async with self.engine.acquire() as conn:
             results: ResultProxy = await conn.execute(select)
-            return [await self._load_to_struct(result) async for result in results]
+            return [await self.load_to_struct(result) async for result in results]
 
     async def get_first_where(
         self, filters: Optional[Sequence[Filter]] = None
@@ -65,11 +65,11 @@ class PostgresRepo(IRepo):
         async with self.engine.acquire() as conn:
             results: ResultProxy = await conn.execute(select)
             if results.rowcount:
-                return await self._load_to_struct(await results.first())
+                return await self.load_to_struct(await results.first())
             return None
 
     async def create(self, struct: Struct) -> Struct:
-        serialized_struct: Dict = self._dump_from_struct(struct)
+        serialized_struct: Dict = self.dump_from_struct(struct)
         insert: Insert = (
             self.table.insert()
             .values(**serialized_struct)
@@ -81,14 +81,14 @@ class PostgresRepo(IRepo):
                 result = await results.fetchone()
             except psycopg2.errors.UniqueViolation as e:
                 raise DuplicateResourceError(e)
-        return await self._load_to_struct(result)
+        return await self.load_to_struct(result)
 
     async def update(self, struct: Struct) -> Struct:
         id = getattr(struct, self.id_field)
         # Call get to make sure the resource exists; will throw error if not
         _ = await self.get(id=id)
 
-        serialized_struct: Dict = self._dump_from_struct(struct)
+        serialized_struct: Dict = self.dump_from_struct(struct)
         where_clause: BinaryExpression = self._where_clause_by_id(id)
         update: Update = (
             self.table.update(whereclause=where_clause)
@@ -102,7 +102,7 @@ class PostgresRepo(IRepo):
             except psycopg2.errors.UniqueViolation as e:
                 # TODO possibly raise a more descriptive error
                 raise DuplicateResourceError(e)
-        return await self._load_to_struct(result)
+        return await self.load_to_struct(result)
 
     async def partial_update(self, id: Any, **kwargs) -> Struct:
         current_struct: Struct = await self.get(id=id)
@@ -110,7 +110,7 @@ class PostgresRepo(IRepo):
         # Use attr.evolve to ensure validation & field generation/calculation
         # is re-run, and to handle case of frozen classes
         updated_struct: Struct = attr.evolve(current_struct, **kwargs)
-        serialized_updated_struct: Dict = self._dump_from_struct(updated_struct)
+        serialized_updated_struct: Dict = self.dump_from_struct(updated_struct)
 
         where_clause: BinaryExpression = self._where_clause_by_id(id)
         update: Update = (
@@ -125,7 +125,7 @@ class PostgresRepo(IRepo):
             except psycopg2.errors.UniqueViolation as e:
                 # TODO possibly raise a more descriptive error
                 raise DuplicateResourceError(e)
-        return await self._load_to_struct(result)
+        return await self.load_to_struct(result)
 
     async def update_where(
         self, filters: Optional[Sequence[Filter]] = None, **kwargs
@@ -140,7 +140,7 @@ class PostgresRepo(IRepo):
         )
         async with self.engine.acquire() as conn:
             results: ResultProxy = await conn.execute(update)
-            return [await self._load_to_struct(result) async for result in results]
+            return [await self.load_to_struct(result) async for result in results]
 
     async def delete(self, id: Any) -> Struct:
         # Call get to make sure the resource exists; will throw error if not
@@ -159,7 +159,7 @@ class PostgresRepo(IRepo):
             except psycopg2.errors.UniqueViolation as e:
                 # TODO possibly raise a more descriptive error
                 raise DuplicateResourceError(e)
-        return await self._load_to_struct(result)
+        return await self.load_to_struct(result)
 
     def _where_clause_by_id(self, id: Any) -> BinaryExpression:
         id_filter = Filter(self.id_field, FilterOperators.EQ, id)
@@ -176,12 +176,17 @@ class PostgresRepo(IRepo):
                 ne_ands.append(table_col != filter.value)
         return and_(*eq_ands, *ne_ands)
 
-    async def _load_to_struct(self, record: RowProxy) -> Struct:
-        # returns attrs object if successful
+    async def load_to_struct(self, record: RowProxy) -> Struct:
+        """Override if you need to decouple struct fields from db schema
+
+        Not actually async, but needs to be marked as such for use in
+        async iterators and other aiopg db access patterns
+        """
         row_dict = dict(record)
         return self.struct_class(**row_dict)
 
-    def _dump_from_struct(self, struct: Struct) -> Dict:
+    def dump_from_struct(self, struct: Struct) -> Dict:
+        """Override if you need to decouple struct fields from db schema"""
         struct_data: Dict = attr.asdict(struct)
         for db_generated_field in self.db_generated_fields:
             if struct_data.get(db_generated_field) is None:
