@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 
-from aiokea.psql import PostgresRepo
+from aiokea.aiopg import PostgresRepo
 from tests.stubs.users.struct import User
 
 METADATA = sa.MetaData()

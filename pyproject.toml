@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "aiokea"
-version = "0.1.0a"
+version = "0.1.1a"
 description = ""
 authors = ["francojposa <francojposa@gmail.com>"]
 

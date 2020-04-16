@@ -1,6 +1,6 @@
 from marshmallow import fields
 
-from aiokea.rest.adapters import BaseSchema, BaseHTTPAdapter
+from aiokea.http.adapters import BaseSchema, BaseHTTPAdapter
 from tests.stubs.users.struct import User
 
 
