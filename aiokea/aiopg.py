@@ -1,7 +1,12 @@
 import datetime
-from typing import Any, Dict, Iterable, Sequence, Type, Optional
-
-import attr
+from typing import (
+    Any,
+    Sequence,
+    Type,
+    Optional,
+    Mapping,
+    MutableMapping,
+)
 
 import aiopg.sa
 import psycopg2
@@ -18,14 +23,14 @@ from aiokea.errors import DuplicateResourceError, ResourceNotFoundError
 from aiokea.filters import Filter, FilterOperators
 
 
-class PostgresRepo(IRepo):
+class AiopgRepo(IRepo):
     def __init__(
         self,
         struct_class: Type,
         engine: aiopg.sa.Engine,
         table: sa.Table,
         id_field: str = None,
-        db_generated_fields: Iterable[str] = None,
+        db_generated_fields: Sequence[str] = None,
     ):
         self.struct_class = struct_class
         self.engine = engine
@@ -34,7 +39,7 @@ class PostgresRepo(IRepo):
         self.db_generated_fields = db_generated_fields or ["created_at", "updated_at"]
 
     async def get(self, id: Any) -> Struct:
-        where_clause: BinaryExpression = self._where_clause_by_id(id)
+        where_clause: BinaryExpression = self._where_clause_from_id(id)
         select: Select = self.table.select(whereclause=where_clause).limit(1)
         async with self.engine.acquire() as conn:
             results: ResultProxy = await conn.execute(select)
@@ -69,7 +74,7 @@ class PostgresRepo(IRepo):
             return None
 
     async def create(self, struct: Struct) -> Struct:
-        serialized_struct: Dict = self.dump_from_struct(struct)
+        serialized_struct: Mapping = self.dump_from_struct(struct)
         insert: Insert = (
             self.table.insert()
             .values(**serialized_struct)
@@ -86,36 +91,14 @@ class PostgresRepo(IRepo):
     async def update(self, struct: Struct) -> Struct:
         id = getattr(struct, self.id_field)
         # Call get to make sure the resource exists; will throw error if not
+        # TODO ^ this is lazy, let's do it in one database call
         _ = await self.get(id=id)
 
-        serialized_struct: Dict = self.dump_from_struct(struct)
-        where_clause: BinaryExpression = self._where_clause_by_id(id)
+        serialized_struct: Mapping = self.dump_from_struct(struct)
+        where_clause: BinaryExpression = self._where_clause_from_id(id)
         update: Update = (
             self.table.update(whereclause=where_clause)
             .values(**serialized_struct)
-            .returning(*[column for column in self.table.columns])
-        )
-        async with self.engine.acquire() as conn:
-            try:
-                results: ResultProxy = await conn.execute(update)
-                result = await results.fetchone()
-            except psycopg2.errors.UniqueViolation as e:
-                # TODO possibly raise a more descriptive error
-                raise DuplicateResourceError(e)
-        return await self.load_to_struct(result)
-
-    async def partial_update(self, id: Any, **kwargs) -> Struct:
-        current_struct: Struct = await self.get(id=id)
-
-        # Use attr.evolve to ensure validation & field generation/calculation
-        # is re-run, and to handle case of frozen classes
-        updated_struct: Struct = attr.evolve(current_struct, **kwargs)
-        serialized_updated_struct: Dict = self.dump_from_struct(updated_struct)
-
-        where_clause: BinaryExpression = self._where_clause_by_id(id)
-        update: Update = (
-            self.table.update(whereclause=where_clause)
-            .values(**serialized_updated_struct)
             .returning(*[column for column in self.table.columns])
         )
         async with self.engine.acquire() as conn:
@@ -146,7 +129,7 @@ class PostgresRepo(IRepo):
         # Call get to make sure the resource exists; will throw error if not
         _ = await self.get(id=id)
 
-        where_clause: BinaryExpression = self._where_clause_by_id(id)
+        where_clause: BinaryExpression = self._where_clause_from_id(id)
         delete: Delete = (
             self.table.delete(whereclause=where_clause).returning(
                 *[column for column in self.table.columns]
@@ -161,7 +144,7 @@ class PostgresRepo(IRepo):
                 raise DuplicateResourceError(e)
         return await self.load_to_struct(result)
 
-    def _where_clause_by_id(self, id: Any) -> BinaryExpression:
+    def _where_clause_from_id(self, id: Any) -> BinaryExpression:
         id_filter = Filter(self.id_field, FilterOperators.EQ, id)
         return self._where_clause_from_filters([id_filter])
 
@@ -185,15 +168,29 @@ class PostgresRepo(IRepo):
         row_dict = dict(record)
         return self.struct_class(**row_dict)
 
-    def dump_from_struct(self, struct: Struct) -> Dict:
+    def dump_from_struct(self, struct: Struct) -> Mapping:
         """Override if you need to decouple struct fields from db schema"""
-        struct_data: Dict = attr.asdict(struct)
+        struct_data = vars(struct)
+        return self._dump_from_struct(struct_data)
+
+    def _dump_from_struct(self, struct_data: MutableMapping) -> MutableMapping:
+        struct_data = self._strip_db_generated_fields(struct_data)
+        struct_data = self._dump_datetime_fields(struct_data)
+        return struct_data
+
+    def _strip_db_generated_fields(self, struct_data: MutableMapping) -> MutableMapping:
         for db_generated_field in self.db_generated_fields:
-            if struct_data.get(db_generated_field) is None:
-                # inserting a non-nullable field with value None will result in a
-                # `psycopg2.IntegrityError: null value in column violates not-null constraint`
-                # we delete the value from the dict instead
+            if (
+                db_generated_field in struct_data
+                and struct_data.get(db_generated_field) is None
+            ):
+                # Inserting value None into a non-nullable Postgres field will result in a
+                # `psycopg2.IntegrityError: null value in column violates not-null constraint`.
+                # Delete the value from the dict instead
                 del struct_data[db_generated_field]
+        return struct_data
+
+    def _dump_datetime_fields(self, struct_data: MutableMapping) -> MutableMapping:
         for k, v in struct_data.items():
             if isinstance(v, datetime.datetime):
                 struct_data[k]: str = v.isoformat()

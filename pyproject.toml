@@ -1,8 +1,9 @@
 [tool.poetry]
 name = "aiokea"
-version = "0.1.1a"
+version = "0.1.2a"
 description = ""
-authors = ["francojposa <francojposa@gmail.com>"]
+authors = ["francojposa <franco@francoposa.io>"]
+repository = "https://github.com/francojposa/aiokea"
 
 [tool.poetry.dependencies]
 python = ">=3.6"

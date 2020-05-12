@@ -6,7 +6,7 @@ from aiopg.sa import create_engine, Engine
 
 from tests import pg_setup
 from tests.stubs.users.adapter import UserHTTPAdapter
-from tests.stubs.users.repo import PostgresUserRepo, USER
+from tests.stubs.users.repo import AiopgUserRepo, USER
 
 
 @pytest.fixture
@@ -20,7 +20,7 @@ def user_post():
 
 
 @pytest.fixture
-async def engine() -> Engine:
+async def aiopg_engine() -> Engine:
     conf = {
         "host": os.getenv("POSTGRES_HOST", default="127.0.0.1"),
         "port": os.getenv("POSTGRES_PORT", default=5432),
@@ -32,28 +32,28 @@ async def engine() -> Engine:
 
 
 @pytest.fixture
-async def psql_user_repo(engine):
-    pg = PostgresUserRepo(engine)
+async def aiopg_user_repo(aiopg_engine):
+    pg = AiopgUserRepo(aiopg_engine)
     yield pg
     pg.engine.close()
     await pg.engine.wait_closed()
 
 
 @pytest.fixture
-async def psql_db(loop, engine, psql_user_repo):
+async def aiopg_db(loop, aiopg_engine, aiopg_user_repo):
 
     tables = [USER]
 
     for table in tables:
-        async with engine.acquire() as conn:
+        async with aiopg_engine.acquire() as conn:
             await conn.execute("TRUNCATE TABLE {0} CASCADE".format(table.name))
 
-    await pg_setup.setup_db(psql_user_repo)
+    await pg_setup.setup_db(aiopg_user_repo)
     yield
 
     for table in tables:
-        async with engine.acquire() as conn:
+        async with aiopg_engine.acquire() as conn:
             await conn.execute("TRUNCATE TABLE {0} CASCADE".format(table.name))
 
-    engine.close()
-    await engine.wait_closed()
+    aiopg_engine.close()
+    await aiopg_engine.wait_closed()

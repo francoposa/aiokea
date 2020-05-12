@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 
-from aiokea.aiopg import PostgresRepo
+from aiokea.aiopg import AiopgRepo
 from tests.stubs.users.struct import User
 
 METADATA = sa.MetaData()
@@ -23,6 +23,6 @@ USER = sa.Table(
 )
 
 
-class PostgresUserRepo(PostgresRepo):
+class AiopgUserRepo(AiopgRepo):
     def __init__(self, engine):
         super().__init__(User, engine, USER)
