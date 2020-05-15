@@ -1,6 +1,7 @@
-.coverage
-**/__pycache__/*
-
-.idea/*
+**/.idea/*
 .vscode/*
 **/.DS_Store
+
+**/__pycache__/*
+**/*.egg-info/*
+.coverage

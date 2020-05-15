@@ -169,7 +169,11 @@ class AiopgRepo(IRepo):
         return self.struct_class(**row_dict)
 
     def dump_from_struct(self, struct: Struct) -> Mapping:
-        """Override if you need to decouple struct fields from db schema"""
+        """Override if you need to decouple struct fields from db schema
+
+        You will likely want to keep the call to _dump_from_struct in order to
+        take advantage of the generalized marshalling functionality it provides.
+        """
         struct_data = vars(struct)
         return self._dump_from_struct(struct_data)
 
@@ -184,9 +188,9 @@ class AiopgRepo(IRepo):
                 db_generated_field in struct_data
                 and struct_data.get(db_generated_field) is None
             ):
-                # Inserting value None into a non-nullable Postgres field will result in a
-                # `psycopg2.IntegrityError: null value in column violates not-null constraint`.
-                # Delete the value from the dict instead
+                # Inserting value None into a non-nullable Postgres field will result
+                # in a `psycopg2.IntegrityError: null value in column violates not-null
+                # constraint`. Delete the value from the dict instead
                 del struct_data[db_generated_field]
         return struct_data
 

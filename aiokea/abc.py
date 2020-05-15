@@ -24,6 +24,10 @@ class IRepo(ABC):
     Each call to an IRepo method is assumed to be an atomic operation.
     IRepo is not intended to provide the ability to batch up
     multiple method calls as a single atomic operation.
+
+    IRepo methods return usecase-layer objects we call "structs". Structs
+    are business-logic objects which should be completely divorced from and
+    unaware of any infrastructure-layer implementation details.
     """
 
     @abstractmethod

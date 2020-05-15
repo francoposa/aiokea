@@ -1,10 +1,10 @@
 from marshmallow import fields
 
-from aiokea.http.adapters import BaseSchema, BaseHTTPAdapter
+from aiokea.http.adapters import BaseHTTPSchema, BaseHTTPAdapter
 from tests.stubs.users.struct import User
 
 
-class UserSchema(BaseSchema):
+class UserHTTPSchema(BaseHTTPSchema):
     class Meta:
         patchable_fields = ["username", "email", "is_enabled"]
 
@@ -18,4 +18,4 @@ class UserSchema(BaseSchema):
 
 class UserHTTPAdapter(BaseHTTPAdapter):
     def __init__(self):
-        super().__init__(schema=UserSchema(), struct_class=User)
+        super().__init__(schema=UserHTTPSchema(), struct_class=User)

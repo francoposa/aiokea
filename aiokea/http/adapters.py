@@ -5,7 +5,7 @@ from marshmallow import Schema
 from aiokea.abc import Struct
 
 
-class BaseSchema(Schema):
+class BaseHTTPSchema(Schema):
     class Meta:
         ordered = True
         strict = True
@@ -14,7 +14,7 @@ class BaseSchema(Schema):
 
 
 class BaseHTTPAdapter:
-    def __init__(self, schema: BaseSchema, struct_class: Type):
+    def __init__(self, schema: BaseHTTPSchema, struct_class: Type):
         self.schema = schema
         self.struct_class: Type = struct_class
 
