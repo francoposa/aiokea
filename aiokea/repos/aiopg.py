@@ -1,7 +1,7 @@
 import datetime
 from typing import (
     Any,
-    Sequence,
+    Iterable,
     Type,
     Optional,
     Mapping,
@@ -30,7 +30,7 @@ class AiopgRepo(IRepo):
         engine: aiopg.sa.Engine,
         table: sa.Table,
         id_field: str = None,
-        db_generated_fields: Sequence[str] = None,
+        db_generated_fields: Iterable[str] = None,
     ):
         self.struct_class = struct_class
         self.engine = engine
@@ -50,8 +50,8 @@ class AiopgRepo(IRepo):
             )
 
     async def get_where(
-        self, filters: Optional[Sequence[Filter]] = None
-    ) -> Sequence[Struct]:
+        self, filters: Optional[Iterable[Filter]] = None
+    ) -> Iterable[Struct]:
         where_clause: BinaryExpression = self._where_clause_from_filters(
             filters
         ) if filters else None
@@ -61,7 +61,7 @@ class AiopgRepo(IRepo):
             return [await self.load_to_struct(result) async for result in results]
 
     async def get_first_where(
-        self, filters: Optional[Sequence[Filter]] = None
+        self, filters: Optional[Iterable[Filter]] = None
     ) -> Optional[Struct]:
         where_clause: BinaryExpression = self._where_clause_from_filters(
             filters
@@ -110,21 +110,6 @@ class AiopgRepo(IRepo):
                 raise DuplicateResourceError(e)
         return await self.load_to_struct(result)
 
-    async def update_where(
-        self, filters: Optional[Sequence[Filter]] = None, **kwargs
-    ) -> Sequence[Struct]:
-        where_clause: BinaryExpression = self._where_clause_from_filters(
-            filters
-        ) if filters else None
-        update: Update = (
-            self.table.update(whereclause=where_clause)
-            .values(**kwargs)
-            .returning(*[column for column in self.table.columns])
-        )
-        async with self.engine.acquire() as conn:
-            results: ResultProxy = await conn.execute(update)
-            return [await self.load_to_struct(result) async for result in results]
-
     async def delete(self, id: Any) -> Struct:
         # Call get to make sure the resource exists; will throw error if not
         _ = await self.get(id=id)
@@ -148,7 +133,7 @@ class AiopgRepo(IRepo):
         id_filter = Filter(self.id_field, FilterOperators.EQ, id)
         return self._where_clause_from_filters([id_filter])
 
-    def _where_clause_from_filters(self, filters: Sequence[Filter]) -> BinaryExpression:
+    def _where_clause_from_filters(self, filters: Iterable[Filter]) -> BinaryExpression:
         eq_ands = []
         ne_ands = []
         for filter in filters:

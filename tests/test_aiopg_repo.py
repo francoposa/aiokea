@@ -1,4 +1,4 @@
-from typing import Optional, Sequence
+from typing import Optional, Iterable, List
 
 import pytest
 
@@ -30,14 +30,14 @@ async def test_get_where(aiopg_db, aiopg_user_repo):
     stub_count = len(pg_setup.stub_users)
 
     # Get all users by using no filters
-    results: Sequence[User] = await aiopg_user_repo.get_where()
+    results: List[User] = await aiopg_user_repo.get_where()
     assert len(results) == stub_count
 
     # Get all users as disjoint sets by using equal to and not equal to
-    result_equal_to: Sequence[User] = await aiopg_user_repo.get_where(
+    result_equal_to: List[User] = await aiopg_user_repo.get_where(
         [Filter("username", EQ, "brian")]
     )
-    result_not_equal_to: Sequence[User] = await aiopg_user_repo.get_where(
+    result_not_equal_to: List[User] = await aiopg_user_repo.get_where(
         [Filter("username", NE, "brian")]
     )
 
@@ -47,7 +47,7 @@ async def test_get_where(aiopg_db, aiopg_user_repo):
 
 async def test_get_first_where(aiopg_db, aiopg_user_repo):
     # Get baseline of all users
-    users: Sequence[User] = await aiopg_user_repo.get_where()
+    users: List[User] = await aiopg_user_repo.get_where()
 
     # Use convenience method to get first user
     first_user: User = await aiopg_user_repo.get_first_where()
@@ -115,29 +115,9 @@ async def test_update(aiopg_db, aiopg_user_repo):
     assert updated_roman.username == "bigassforehead"
 
 
-async def test_update_where(aiopg_db, aiopg_user_repo):
-    # Get baseline
-    user_count = len(await aiopg_user_repo.get_where())
-    old_disabled_user_count = len(
-        await aiopg_user_repo.get_where([Filter("is_enabled", EQ, False)])
-    )
-    assert old_disabled_user_count != user_count
-
-    # Update users
-    await aiopg_user_repo.update_where(
-        filters=[Filter("is_enabled", EQ, True)], is_enabled=False
-    )
-
-    # Check all users are now disabled
-    new_disabled_user_count = len(
-        await aiopg_user_repo.get_where([Filter("is_enabled", EQ, False)])
-    )
-    assert new_disabled_user_count == user_count
-
-
 async def test_delete(aiopg_db, aiopg_user_repo):
     # Get baseline
-    old_users: Sequence[User] = await aiopg_user_repo.get_where()
+    old_users: List[User] = await aiopg_user_repo.get_where()
     old_user_count = len(await aiopg_user_repo.get_where())
 
     # Delete a user
@@ -148,7 +128,7 @@ async def test_delete(aiopg_db, aiopg_user_repo):
     assert deleted_user == first_old_user
 
     # Assert the deleted user is not available from the repo
-    new_users: Sequence[User] = await aiopg_user_repo.get_where()
+    new_users: List[User] = await aiopg_user_repo.get_where()
     assert deleted_user not in new_users
 
     # Assert we have one fewer user in the repo

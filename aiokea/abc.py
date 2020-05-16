@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Optional, Sequence
+from typing import Any, Optional, Iterable, List
 
 from aiokea.filters import Filter
 
@@ -45,13 +45,13 @@ class IService(ABC):
 
     @abstractmethod
     async def get_where(
-        self, filters: Optional[Sequence[Filter]] = None
-    ) -> Sequence[Struct]:
+        self, filters: Optional[Iterable[Filter]] = None
+    ) -> List[Struct]:
         pass
 
     @abstractmethod
     async def get_first_where(
-        self, filters: Optional[Sequence[Filter]] = None
+        self, filters: Optional[Iterable[Filter]] = None
     ) -> Optional[Struct]:
         pass
 
@@ -110,13 +110,13 @@ class IRepo(ABC):
 
     @abstractmethod
     async def get_where(
-        self, filters: Optional[Sequence[Filter]] = None
-    ) -> Sequence[Struct]:
+        self, filters: Optional[Iterable[Filter]] = None
+    ) -> Iterable[Struct]:
         pass
 
     @abstractmethod
     async def get_first_where(
-        self, filters: Optional[Sequence[Filter]] = None
+        self, filters: Optional[Iterable[Filter]] = None
     ) -> Optional[Struct]:
         pass
 

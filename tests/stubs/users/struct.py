@@ -14,7 +14,7 @@ class User:
     id = attr.ib(validator=instance_of(str))
     is_enabled = attr.ib(validator=instance_of(bool), default=True)
 
-    # service auto created
+    # Repo auto created
     # When we create new structs in the app or from a POST, these will not be set.
     # The field values will be set by the service when records are created or updated
     # Structs that are deserialized from the service will then have these fields set

@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 
-from aiokea.aiopg import AiopgRepo
+from aiokea.repos.aiopg import AiopgRepo
 from tests.stubs.users.struct import User
 
 METADATA = sa.MetaData()

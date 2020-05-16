@@ -1,13 +1,13 @@
 from typing import Any
 
 
-EQ = "EQ"  # equal to
-NE = "NE"  # not equal to
-GT = "GT"  # greater than
-GTE = "GTE"  # greater than or equal to
-LT = "LT"  # less than
-LTE = "LTE"  # less than or equal to
-IN = "IN"  # inclusion operator
+EQ = "eq"  # equal to
+NE = "ne"  # not equal to
+GT = "gt"  # greater than
+GTE = "gte"  # greater than or equal to
+LT = "lt"  # less than
+LTE = "lte"  # less than or equal to
+IN = "in"  # inclusion operator
 
 
 class FilterOperators:
@@ -38,3 +38,5 @@ class Filter:
 class PaginationParams:
     PAGE = "page"
     PAGE_SIZE = "page_size"
+
+    values = {PAGE, PAGE_SIZE}
