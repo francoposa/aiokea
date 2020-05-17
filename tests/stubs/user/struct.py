@@ -24,3 +24,11 @@ class User:
     @id.default
     def generate_uuid(self) -> str:
         return str(uuid.uuid4())
+
+
+stub_users = [
+    User(username="domtoretto", email="americanmuscle@fastnfurious.com"),
+    User(username="brian", email="importtuners@fastnfurious.com"),
+    User(username="roman", email="ejectoseat@fastnfurious.com"),
+    User(username="han", email="betterlucktomorrow@fastnfurious.com", is_enabled=False),
+]

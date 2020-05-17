@@ -1,11 +1,10 @@
-from typing import Optional, Iterable, List
+from typing import Optional, List
 
 import pytest
 
 from aiokea.errors import DuplicateResourceError, ResourceNotFoundError
 from aiokea.filters import Filter, EQ, NE
-from tests import pg_setup
-from tests.stubs.users.struct import User
+from tests.stubs.user.struct import User, stub_users
 
 
 async def test_get(aiopg_db, aiopg_user_repo):
@@ -27,13 +26,13 @@ async def test_get_not_found(aiopg_db, aiopg_user_repo):
 
 async def test_get_where(aiopg_db, aiopg_user_repo):
     # Get baseline
-    stub_count = len(pg_setup.stub_users)
+    stub_count = len(stub_users)
 
-    # Get all users by using no filters
+    # Get all user by using no filters
     results: List[User] = await aiopg_user_repo.get_where()
     assert len(results) == stub_count
 
-    # Get all users as disjoint sets by using equal to and not equal to
+    # Get all user as disjoint sets by using equal to and not equal to
     result_equal_to: List[User] = await aiopg_user_repo.get_where(
         [Filter("username", EQ, "brian")]
     )
@@ -46,7 +45,7 @@ async def test_get_where(aiopg_db, aiopg_user_repo):
 
 
 async def test_get_first_where(aiopg_db, aiopg_user_repo):
-    # Get baseline of all users
+    # Get baseline of all user
     users: List[User] = await aiopg_user_repo.get_where()
 
     # Use convenience method to get first user
@@ -68,7 +67,7 @@ async def test_get_first_where_no_results(aiopg_db, aiopg_user_repo):
 
 async def test_insert(aiopg_db, aiopg_user_repo):
     # Get baseline
-    old_user_count = len(await aiopg_user_repo.get_where())
+    old_user_count = len(stub_users)
 
     # Insert a user
     new_user = User(username="test", email="test@test.com")
@@ -77,20 +76,20 @@ async def test_insert(aiopg_db, aiopg_user_repo):
     # Assert that the user took the id we generated within the app
     assert inserted_user.id == new_user.id
 
-    # Assert we have one more user in the database
+    # Assert we have one more user in the repo
     new_user_count = len(await aiopg_user_repo.get_where())
     assert new_user_count == old_user_count + 1
 
 
-async def test_insert_duplicate_error(aiopg_db, aiopg_user_repo):
+async def test_create_duplicate_error(aiopg_db, aiopg_user_repo):
     # Get baseline
     old_user_count = len(await aiopg_user_repo.get_where())
 
-    # Insert a user
+    # Create a user
     new_user = User(username="test", email="test@test.com")
     await aiopg_user_repo.create(new_user)
 
-    # Attempt to re-insert the same user
+    # Attempt to re-create the same user
     with pytest.raises(DuplicateResourceError):
         await aiopg_user_repo.create(new_user)
 

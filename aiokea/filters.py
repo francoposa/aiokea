@@ -35,8 +35,15 @@ class Filter:
         self.value = value
 
 
-class PaginationParams:
+class PageNumberPaginationParams:
     PAGE = "page"
     PAGE_SIZE = "page_size"
 
     values = {PAGE, PAGE_SIZE}
+
+
+class LimitOffsetPaginationParams:
+    LIMIT = "limit"
+    OFFSET = "offset"
+
+    values = {LIMIT, OFFSET}

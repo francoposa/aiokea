@@ -68,7 +68,7 @@ class IService(ABC):
         pass
 
 
-class IRepo(ABC):
+class IRepo(IService):
     """
     Abstract Base Class for implementations of the Repository Pattern
 

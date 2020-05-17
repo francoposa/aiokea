@@ -1,7 +1,7 @@
 import marshmallow
 import pytest
 
-from tests.stubs.users.struct import User
+from tests.stubs.user.struct import User
 
 
 def test_load_to_struct_success(user_http_adapter, user_post):
