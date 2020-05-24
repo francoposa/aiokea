@@ -23,7 +23,7 @@ from aiokea.errors import DuplicateResourceError, ResourceNotFoundError
 from aiokea.filters import Filter, FilterOperators
 
 
-class AiopgRepo(IRepo):
+class AIOPGRepo(IRepo):
     def __init__(
         self,
         struct_class: Type,

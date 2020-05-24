@@ -6,15 +6,15 @@ from multidict import MultiMapping
 
 from aiokea.abc import IService, Struct
 from aiokea.filters import Filter, EQ, PageNumberPaginationParams, FilterOperators
-from aiokea.http.adapters import BaseHTTPAdapter
+from aiokea.http.adapters import BaseMarshmallowAdapter
 
 
 FILTER_KEY_REGEX = re.compile(r"\[(.*?)\]")
 
 
-class ServiceHandler:
+class AIOHTTPServiceHandler:
     def __init__(
-        self, service: IService, adapter: BaseHTTPAdapter, id_field: str = None,
+        self, service: IService, adapter: BaseMarshmallowAdapter, id_field: str = None,
     ):
         super().__init__()
         self.service = service
@@ -30,7 +30,7 @@ class ServiceHandler:
 
 
 def _query_to_filters(
-    raw_query_map: MultiMapping, adapter: BaseHTTPAdapter
+    raw_query_map: MultiMapping, adapter: BaseMarshmallowAdapter
 ) -> List[Filter]:
     valid_filter_fields: Set[str] = _valid_query_params(adapter)
     query_filters: List[Filter] = []
@@ -57,7 +57,7 @@ def _query_to_filters(
     return query_filters
 
 
-def _valid_query_params(adapter: BaseHTTPAdapter) -> Set[str]:
+def _valid_query_params(adapter: BaseMarshmallowAdapter) -> Set[str]:
     valid_query_params = set()
     for field in adapter.schema.fields:
         valid_query_params.add(field)

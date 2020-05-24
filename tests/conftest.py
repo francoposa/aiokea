@@ -5,7 +5,7 @@ import pytest
 from aiohttp import web
 from aiopg.sa import create_engine, Engine
 
-from aiokea.http.handlers import ServiceHandler
+from aiokea.http.handlers import AIOHTTPServiceHandler
 from tests.stubs.user.adapter import UserHTTPAdapter
 from tests.stubs.user.repo import AiopgUserRepo, USER, setup_user_repo
 
@@ -82,7 +82,7 @@ def http_app(
        """
 
         # Users endpoint
-        user_handler = ServiceHandler(
+        user_handler = AIOHTTPServiceHandler(
             service=aiopg_user_repo, adapter=user_http_adapter
         )
         app.router.add_get("/api/v1/user", user_handler.get_handler)
