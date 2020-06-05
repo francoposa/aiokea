@@ -1,13 +1,13 @@
 from marshmallow import fields
 
-from aiokea.http.adapters import BaseMarshmallowSchema, BaseMarshmallowAdapter
+from aiokea.repos.adapters import (
+    BaseMarshmallowRepoSchema,
+    BaseMarshmallowAIOPGSQLAlchemyRepoAdapter,
+)
 from tests.stubs.user.struct import User
 
 
-class UserHTTPSchema(BaseMarshmallowSchema):
-    class Meta:
-        patchable_fields = ["username", "email", "is_enabled"]
-
+class UserRepoSchema(BaseMarshmallowRepoSchema):
     id = fields.Str(dump_only=True)
     username = fields.Str(required=True)
     email = fields.Str(required=True)
@@ -16,6 +16,6 @@ class UserHTTPSchema(BaseMarshmallowSchema):
     updated_at = fields.DateTime()
 
 
-class UserHTTPAdapter(BaseMarshmallowAdapter):
+class UserRepoAdapter(BaseMarshmallowAIOPGSQLAlchemyRepoAdapter):
     def __init__(self):
-        super().__init__(schema=UserHTTPSchema(), struct_class=User)
+        super().__init__(schema=UserRepoSchema(), struct_class=User)

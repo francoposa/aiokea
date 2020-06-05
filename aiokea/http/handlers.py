@@ -6,7 +6,7 @@ from multidict import MultiMapping
 
 from aiokea.abc import IService, Struct
 from aiokea.filters import Filter, EQ, PageNumberPaginationParams, FilterOperators
-from aiokea.http.adapters import BaseMarshmallowAdapter
+from aiokea.http.adapters import BaseMarshmallowHTTPAdapter
 
 
 FILTER_KEY_REGEX = re.compile(r"\[(.*?)\]")
@@ -14,23 +14,22 @@ FILTER_KEY_REGEX = re.compile(r"\[(.*?)\]")
 
 class AIOHTTPServiceHandler:
     def __init__(
-        self, service: IService, adapter: BaseMarshmallowAdapter, id_field: str = None,
+        self, service: IService, adapter: BaseMarshmallowHTTPAdapter,
     ):
         super().__init__()
         self.service = service
         self.adapter = adapter
-        self.id_field = id_field or "id"
 
     async def get_handler(self, request: web.Request) -> web.Response:
         """GET handler to retrieve usecases."""
         filters: List[Filter] = _query_to_filters(request.query, self.adapter)
         structs: List[Struct] = await self.service.get_where(filters=filters)
-        response_data = [self.adapter.dump_from_struct(s) for s in structs]
+        response_data = [self.adapter.from_struct(s) for s in structs]
         return web.json_response({"data": response_data})
 
 
 def _query_to_filters(
-    raw_query_map: MultiMapping, adapter: BaseMarshmallowAdapter
+    raw_query_map: MultiMapping, adapter: BaseMarshmallowHTTPAdapter
 ) -> List[Filter]:
     valid_filter_fields: Set[str] = _valid_query_params(adapter)
     query_filters: List[Filter] = []
@@ -57,7 +56,7 @@ def _query_to_filters(
     return query_filters
 
 
-def _valid_query_params(adapter: BaseMarshmallowAdapter) -> Set[str]:
+def _valid_query_params(adapter: BaseMarshmallowHTTPAdapter) -> Set[str]:
     valid_query_params = set()
     for field in adapter.schema.fields:
         valid_query_params.add(field)
