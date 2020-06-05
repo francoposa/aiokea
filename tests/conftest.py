@@ -5,31 +5,55 @@ import pytest
 from aiohttp import web
 from aiopg.sa import create_engine, Engine
 
-import tests.db_setup as db_setup
-from app.infrastructure.datastore.postgres.user_repo import PostgresUserRepo
-from app.infrastructure.server.http.adapters.user import UserHTTPAdapter
-from app.infrastructure.server.http.handlers.base import HTTPHandler
-from app.infrastructure.server.http.routes import USER_PATH
+from aiokea.http.handlers import AIOHTTPServiceHandler
+from tests.stubs.user.http_adapter import UserHTTPAdapter
+from tests.stubs.user.repo import AIOPGSQLAlchemyTableUserRepo, USER, setup_user_repo
+from tests.stubs.user.repo_adapter import UserRepoAdapter
 
 
 @pytest.fixture
-async def engine() -> Engine:
+def user_repo_adapter():
+    return UserRepoAdapter()
+
+
+@pytest.fixture
+async def aiopg_engine() -> Engine:
     conf = {
         "host": os.getenv("POSTGRES_HOST", default="127.0.0.1"),
         "port": os.getenv("POSTGRES_PORT", default=5432),
         "user": os.getenv("POSTGRES_USER", default="postgres"),
         "password": os.getenv("POSTGRES_PASSWORD", default="postgres"),
-        "database": "aiohttp_crud_test",
+        "database": "aiokea_test",
     }
     return await create_engine(**conf)
 
 
 @pytest.fixture
-async def user_pg_client(engine):
-    pg = PostgresUserRepo(engine)
+async def aiopg_user_repo(aiopg_engine):
+    pg = AIOPGSQLAlchemyTableUserRepo(aiopg_engine)
     yield pg
     pg.engine.close()
     await pg.engine.wait_closed()
+
+
+@pytest.fixture
+async def aiopg_db(loop, aiopg_engine, aiopg_user_repo):
+
+    tables = [USER]
+
+    for table in tables:
+        async with aiopg_engine.acquire() as conn:
+            await conn.execute("TRUNCATE TABLE {0} CASCADE".format(table.name))
+
+    await setup_user_repo(aiopg_user_repo)
+    yield
+
+    for table in tables:
+        async with aiopg_engine.acquire() as conn:
+            await conn.execute("TRUNCATE TABLE {0} CASCADE".format(table.name))
+
+    aiopg_engine.close()
+    await aiopg_engine.wait_closed()
 
 
 @pytest.fixture
@@ -39,32 +63,12 @@ def user_http_adapter():
 
 @pytest.fixture
 def user_post():
-    return json.load(open("./tests/stubs/users/POST.json"))
-
-
-@pytest.fixture
-async def db(loop, engine, user_pg_client):
-
-    tables = ["users"]
-
-    for table in tables:
-        async with engine.acquire() as conn:
-            await conn.execute("TRUNCATE TABLE {0} CASCADE".format(table))
-
-    await db_setup.setup_db(user_pg_client)
-    yield
-
-    for table in tables:
-        async with engine.acquire() as conn:
-            await conn.execute("TRUNCATE TABLE {0} CASCADE".format(table))
-
-    engine.close()
-    await engine.wait_closed()
+    return json.load(open("./tests/stubs/user/json/POST.json"))
 
 
 @pytest.fixture
 def http_app(
-    loop, user_pg_client, user_http_adapter,
+    aiopg_db, aiopg_user_repo, user_http_adapter,
 ):
     async def startup_handler(app):
         """Run all initialization tasks.
@@ -74,9 +78,11 @@ def http_app(
        """
 
         # Users endpoint
-        user_handler = HTTPHandler(db_client=user_pg_client, adapter=UserHTTPAdapter())
-        app.router.add_get(USER_PATH, user_handler.get_handler)
-        app.router.add_post(USER_PATH, user_handler.post_handler)
+        user_handler = AIOHTTPServiceHandler(
+            service=aiopg_user_repo, adapter=user_http_adapter
+        )
+        app.router.add_get("/api/v1/users", user_handler.get_handler)
+        # app.router.add_post(USER_PATH, user_handler.post_handler)
 
     app = web.Application()
     app.on_startup.append(startup_handler)

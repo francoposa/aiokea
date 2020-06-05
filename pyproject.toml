@@ -1,26 +1,25 @@
 [tool.poetry]
-name = "aiohttp-postgres"
-version = "0.1.0"
+name = "aiokea"
+version = "0.1.4a"
 description = ""
-authors = ["Franco Posa <francojposa@gmail.com>"]
+authors = ["francojposa <franco@francoposa.io>"]
+repository = "https://github.com/francojposa/aiokea"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = ">=3.6"
 aiohttp = "^3.6.2"
-aiohttp-cors = "^0.7.0"
 aiopg = "^1.0.0"
-alembic = "^1.3.1"
-attrs = "^19.3.0"
-marshmallow = "^3.3.0"
-pytest = "^5.2"
-pytest-aiohttp = "^0.3.0"
-pytest-cov = "^2.8.1"
-black = "^19.10b0"
-aiokea = "^0.1.0-alpha.0"
+sqlalchemy = "^1.3.13"
+marshmallow = "^3.5.1"
 
 [tool.poetry.dev-dependencies]
+pytest = "^5.2"
+black = "^19.10b0"
+pytest-cov = "^2.8.1"
+alembic = "^1.4.0"
+pytest-aiohttp = "^0.3.0"
+ipython = "^7.14.0"
 
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
-
