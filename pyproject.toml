@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "aiohttp-postgres"
+version = "0.1.0"
+description = ""
+authors = ["Franco Posa <francojposa@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+aiohttp = "^3.6.2"
+aiohttp-cors = "^0.7.0"
+aiopg = "^1.0.0"
+alembic = "^1.3.1"
+attrs = "^19.3.0"
+marshmallow = "^3.3.0"
+pytest = "^5.2"
+pytest-aiohttp = "^0.3.0"
+pytest-cov = "^2.8.1"
+black = "^19.10b0"
+aiokea = "^0.1.0-alpha.0"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
+

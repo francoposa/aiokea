@@ -1,0 +1,7 @@
+[report]
+exclude_lines =
+	pragma: no cover
+	if __name__ == .__main__.:
+omit =
+	app/__main__.py
+	app/main.py
