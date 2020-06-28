@@ -18,13 +18,13 @@ from sqlalchemy.sql.schema import Column
 from aiokea.abc import IRepo, Struct
 from aiokea.errors import DuplicateResourceError, ResourceNotFoundError
 from aiokea.filters import Filter, FilterOperators
-from aiokea.repos.adapters import BaseMarshmallowAIOPGSQLAlchemyRepoAdapter
+from aiokea.repos.adapters import BaseMarshmallowRepoAdapter
 
 
-class AIOPGSQLAlchemyTableRepo(IRepo):
+class AIOPGRepo(IRepo):
     def __init__(
         self,
-        adapter: BaseMarshmallowAIOPGSQLAlchemyRepoAdapter,
+        adapter: BaseMarshmallowRepoAdapter,
         engine: aiopg.sa.Engine,
         table: sa.Table,
     ):

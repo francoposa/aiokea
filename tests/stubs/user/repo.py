@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 
-from aiokea.repos.aiopg import AIOPGSQLAlchemyTableRepo
+from aiokea.repos.aiopg import AIOPGRepo
 from tests.stubs.user.repo_adapter import UserRepoAdapter
 from tests.stubs.user.struct import User, stub_users
 
@@ -24,11 +24,11 @@ USER = sa.Table(
 )
 
 
-class AIOPGSQLAlchemyTableUserRepo(AIOPGSQLAlchemyTableRepo):
+class AIOPGUserRepo(AIOPGRepo):
     def __init__(self, engine):
         super().__init__(UserRepoAdapter(), engine, USER)
 
 
-async def setup_user_repo(user_repo: AIOPGSQLAlchemyTableUserRepo):
+async def setup_user_repo(user_repo: AIOPGUserRepo):
     for user in stub_users:
         await user_repo.create(user)

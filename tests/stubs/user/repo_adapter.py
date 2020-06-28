@@ -2,7 +2,7 @@ from marshmallow import fields
 
 from aiokea.repos.adapters import (
     BaseMarshmallowRepoSchema,
-    BaseMarshmallowAIOPGSQLAlchemyRepoAdapter,
+    BaseMarshmallowRepoAdapter,
 )
 from tests.stubs.user.struct import User
 
@@ -16,6 +16,6 @@ class UserRepoSchema(BaseMarshmallowRepoSchema):
     updated_at = fields.DateTime()
 
 
-class UserRepoAdapter(BaseMarshmallowAIOPGSQLAlchemyRepoAdapter):
+class UserRepoAdapter(BaseMarshmallowRepoAdapter):
     def __init__(self):
         super().__init__(schema=UserRepoSchema(), struct_class=User)

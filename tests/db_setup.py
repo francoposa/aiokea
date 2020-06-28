@@ -1,4 +1,4 @@
-from app.usecases.resources.user import User
+from tests.stubs.user.struct import User
 
 stub_users = [
     User(username="domtoretto", email="americanmuscle@fastnfurious.com"),
@@ -8,7 +8,7 @@ stub_users = [
 ]
 
 
-async def setup_db(user_pg_client):
+async def setup_db(aiopg_user_repo):
 
     for user in stub_users:
-        await user_pg_client.create(user)
+        await aiopg_user_repo.create(user)

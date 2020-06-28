@@ -4,7 +4,6 @@ from typing import Mapping, MutableMapping, Type
 
 
 from marshmallow import Schema
-from sqlalchemy.engine import RowProxy
 
 from aiokea.abc import Struct
 
@@ -18,7 +17,7 @@ class BaseMarshmallowRepoSchema(Schema):
         repo_generated_fields = ["created_at", "updated_at"]
 
 
-class BaseMarshmallowAIOPGSQLAlchemyRepoAdapter(ABC):
+class BaseMarshmallowRepoAdapter(ABC):
     """
     Adapter utilizing Marshmallow Schemas to marshall Struct instances to and from
     statements created with the SQLAlchemy Table API.
@@ -28,16 +27,16 @@ class BaseMarshmallowAIOPGSQLAlchemyRepoAdapter(ABC):
         self.schema = schema
         self.struct_class: Type = struct_class
 
-    async def to_struct(self, repo_data: RowProxy) -> Struct:
+    async def to_struct(self, data: Mapping) -> Struct:
         """
-        Load SQLALchemy query result RowProxy into Struct
+        Load repo query result data into Struct
 
         Override if you need to decouple struct fields from db schema
 
-        Not actually async, but needs to be marked as such for use in
-        async iterators and other async repo db access patterns
+        Not actually async, but needs to be marked async for use in
+        async iterators and other async repo patterns
         """
-        return self.struct_class(**repo_data)
+        return self.struct_class(**data)
 
     def from_struct(self, struct: Struct) -> Mapping:
         """
@@ -52,14 +51,12 @@ class BaseMarshmallowAIOPGSQLAlchemyRepoAdapter(ABC):
         struct_data = vars(struct)
         return self._from_struct(struct_data)
 
-    def _from_struct(self, struct_data: MutableMapping) -> MutableMapping:
+    def _from_struct(self, struct_data: Mapping) -> Mapping:
         struct_data = self._strip_repo_generated_fields(struct_data)
         struct_data = self._dump_datetime_fields(struct_data)
         return struct_data
 
-    def _strip_repo_generated_fields(
-        self, struct_data: MutableMapping
-    ) -> MutableMapping:
+    def _strip_repo_generated_fields(self, struct_data: Mapping) -> Mapping:
         for db_generated_field in self.schema.Meta.repo_generated_fields:
             if (
                 db_generated_field in struct_data
@@ -71,7 +68,7 @@ class BaseMarshmallowAIOPGSQLAlchemyRepoAdapter(ABC):
                 del struct_data[db_generated_field]
         return struct_data
 
-    def _dump_datetime_fields(self, struct_data: MutableMapping) -> MutableMapping:
+    def _dump_datetime_fields(self, struct_data: Mapping) -> Mapping:
         for k, v in struct_data.items():
             if isinstance(v, datetime.datetime):
                 struct_data[k]: str = v.isoformat()

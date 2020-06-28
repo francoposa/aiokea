@@ -7,7 +7,7 @@ from aiopg.sa import create_engine, Engine
 
 from aiokea.http.handlers import AIOHTTPServiceHandler
 from tests.stubs.user.http_adapter import UserHTTPAdapter
-from tests.stubs.user.repo import AIOPGSQLAlchemyTableUserRepo, USER, setup_user_repo
+from tests.stubs.user.repo import AIOPGUserRepo, USER, setup_user_repo
 from tests.stubs.user.repo_adapter import UserRepoAdapter
 
 
@@ -30,7 +30,7 @@ async def aiopg_engine() -> Engine:
 
 @pytest.fixture
 async def aiopg_user_repo(aiopg_engine):
-    pg = AIOPGSQLAlchemyTableUserRepo(aiopg_engine)
+    pg = AIOPGUserRepo(aiopg_engine)
     yield pg
     pg.engine.close()
     await pg.engine.wait_closed()
@@ -82,7 +82,7 @@ def http_app(
             service=aiopg_user_repo, adapter=user_http_adapter
         )
         app.router.add_get("/api/v1/users", user_handler.get_handler)
-        # app.router.add_post(USER_PATH, user_handler.post_handler)
+        app.router.add_post("/api/v1/users", user_handler.post_handler)
 
     app = web.Application()
     app.on_startup.append(startup_handler)

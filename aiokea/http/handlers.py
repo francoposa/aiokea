@@ -1,10 +1,13 @@
+import json
 import re
 from typing import List, Set
 
+import marshmallow
 from aiohttp import web
 from multidict import MultiMapping
 
 from aiokea.abc import IService, Struct
+from aiokea.errors import DuplicateResourceError
 from aiokea.filters import Filter, EQ, PageNumberPaginationParams, FilterOperators
 from aiokea.http.adapters import BaseMarshmallowHTTPAdapter
 
@@ -21,10 +24,36 @@ class AIOHTTPServiceHandler:
         self.adapter = adapter
 
     async def get_handler(self, request: web.Request) -> web.Response:
-        """GET handler to retrieve usecases."""
+        """GET handler to list resources satisfying query filters"""
         filters: List[Filter] = _query_to_filters(request.query, self.adapter)
         structs: List[Struct] = await self.service.get_where(filters=filters)
         response_data = [self.adapter.from_struct(s) for s in structs]
+        return web.json_response({"data": response_data})
+
+    async def post_handler(self, request: web.Request) -> web.Response:
+        """POST handler to create a resource"""
+        try:
+            request_data = await request.json()
+        except Exception:
+            raise web.HTTPBadRequest(
+                text=json.dumps({"errors": ["The supplied JSON is invalid."]})
+            )
+
+        try:
+            request_usecase = self.adapter.to_struct(request_data)
+        except marshmallow.exceptions.ValidationError as e:
+            error_list = [{k: v} for k, v in e.messages.items()]
+            raise web.HTTPUnprocessableEntity(
+                text=json.dumps({"errors": error_list}), content_type="application/json"
+            )
+        try:
+            usecase = await self.service.create(request_usecase)
+        except DuplicateResourceError as e:
+            raise web.HTTPConflict(
+                text=json.dumps({"errors": [e.error_msg]}),
+                content_type="application/json",
+            )
+        response_data = self.adapter.from_struct(usecase)
         return web.json_response({"data": response_data})
 
 
