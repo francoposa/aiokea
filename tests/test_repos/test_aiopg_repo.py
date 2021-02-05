@@ -24,19 +24,19 @@ async def test_get_not_found(aiopg_db, aiopg_user_repo):
         _ = await aiopg_user_repo.get(id="xxx")
 
 
-async def test_get_where(aiopg_db, aiopg_user_repo):
+async def test_where(aiopg_db, aiopg_user_repo):
     # Get baseline
     stub_count = len(stub_users)
 
     # Get all user by using no filters
-    results: List[User] = await aiopg_user_repo.get_where()
+    results: List[User] = await aiopg_user_repo.where()
     assert len(results) == stub_count
 
     # Get all user as disjoint sets by using equal to and not equal to
-    result_equal_to: List[User] = await aiopg_user_repo.get_where(
+    result_equal_to: List[User] = await aiopg_user_repo.where(
         [Filter("username", EQ, "brian")]
     )
-    result_not_equal_to: List[User] = await aiopg_user_repo.get_where(
+    result_not_equal_to: List[User] = await aiopg_user_repo.where(
         [Filter("username", NE, "brian")]
     )
 
@@ -44,20 +44,20 @@ async def test_get_where(aiopg_db, aiopg_user_repo):
     assert len(result_equal_to) + len(result_not_equal_to) == stub_count
 
 
-async def test_get_first_where(aiopg_db, aiopg_user_repo):
+async def test_first(aiopg_db, aiopg_user_repo):
     # Get baseline of all user
-    users: List[User] = await aiopg_user_repo.get_where()
+    users: List[User] = await aiopg_user_repo.where()
 
     # Use convenience method to get first user
-    first_user: User = await aiopg_user_repo.get_first_where()
+    first_user: User = await aiopg_user_repo.first()
 
-    # Compare get_first_where user with first get_where user
+    # Compare first_where user with first where user
     assert first_user == users[0]
 
 
-async def test_get_first_where_no_results(aiopg_db, aiopg_user_repo):
+async def test_first_no_results(aiopg_db, aiopg_user_repo):
     # Attempt to retrieve user by nonexistent ID
-    user: Optional[User] = await aiopg_user_repo.get_first_where(
+    user: Optional[User] = await aiopg_user_repo.first(
         filters=[Filter("id", EQ, "xxx")]
     )
 
@@ -77,13 +77,13 @@ async def test_insert(aiopg_db, aiopg_user_repo):
     assert inserted_user.id == new_user.id
 
     # Assert we have one more user in the repo
-    new_user_count = len(await aiopg_user_repo.get_where())
+    new_user_count = len(await aiopg_user_repo.where())
     assert new_user_count == old_user_count + 1
 
 
 async def test_create_duplicate_error(aiopg_db, aiopg_user_repo):
     # Get baseline
-    old_user_count = len(await aiopg_user_repo.get_where())
+    old_user_count = len(await aiopg_user_repo.where())
 
     # Create a user
     new_user = User(username="test", email="test@test.com")
@@ -94,30 +94,26 @@ async def test_create_duplicate_error(aiopg_db, aiopg_user_repo):
         await aiopg_user_repo.create(new_user)
 
     # Check that only one user was created
-    new_user_count = len(await aiopg_user_repo.get_where())
+    new_user_count = len(await aiopg_user_repo.where())
     assert new_user_count == old_user_count + 1
 
 
 async def test_update(aiopg_db, aiopg_user_repo):
     # Get an existing user
-    roman: User = await aiopg_user_repo.get_first_where(
-        [Filter("username", EQ, "roman")]
-    )
+    roman: User = await aiopg_user_repo.first([Filter("username", EQ, "roman")])
     roman.username = "bigassforehead"
     # Update the user
     await aiopg_user_repo.update(roman)
 
     # Check that the user has been updated
-    updated_roman: User = await aiopg_user_repo.get_first_where(
-        [Filter("id", EQ, roman.id)]
-    )
+    updated_roman: User = await aiopg_user_repo.first([Filter("id", EQ, roman.id)])
     assert updated_roman.username == "bigassforehead"
 
 
 async def test_delete(aiopg_db, aiopg_user_repo):
     # Get baseline
-    old_users: List[User] = await aiopg_user_repo.get_where()
-    old_user_count = len(await aiopg_user_repo.get_where())
+    old_users: List[User] = await aiopg_user_repo.where()
+    old_user_count = len(await aiopg_user_repo.where())
 
     # Delete a user
     first_old_user = old_users[0]
@@ -127,7 +123,7 @@ async def test_delete(aiopg_db, aiopg_user_repo):
     assert deleted_user == first_old_user
 
     # Assert the deleted user is not available from the repo
-    new_users: List[User] = await aiopg_user_repo.get_where()
+    new_users: List[User] = await aiopg_user_repo.where()
     assert deleted_user not in new_users
 
     # Assert we have one fewer user in the repo

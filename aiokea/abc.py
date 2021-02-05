@@ -44,13 +44,11 @@ class IService(ABC):
         pass
 
     @abstractmethod
-    async def get_where(
-        self, filters: Optional[Iterable[Filter]] = None
-    ) -> List[Struct]:
+    async def where(self, filters: Optional[Iterable[Filter]] = None) -> List[Struct]:
         pass
 
     @abstractmethod
-    async def get_first_where(
+    async def first(
         self, filters: Optional[Iterable[Filter]] = None
     ) -> Optional[Struct]:
         pass
@@ -109,13 +107,11 @@ class IRepo(IService):
         pass
 
     @abstractmethod
-    async def get_where(
-        self, filters: Optional[Iterable[Filter]] = None
-    ) -> List[Struct]:
+    async def where(self, filters: Optional[Iterable[Filter]] = None) -> List[Struct]:
         pass
 
     @abstractmethod
-    async def get_first_where(
+    async def first(
         self, filters: Optional[Iterable[Filter]] = None
     ) -> Optional[Struct]:
         pass
@@ -146,14 +142,13 @@ class ITransactionalRepo(IRepo):
 
 
 class IHTTPSchema(ABC):
-
     @property
     @abstractmethod
     def fields(self) -> List:
         pass
 
-class IHTTPAdapter(ABC):
 
+class IHTTPAdapter(ABC):
     @property
     @abstractmethod
     def schema(self) -> IHTTPSchema:

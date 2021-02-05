@@ -36,4 +36,3 @@ class BaseMarshmallowHTTPAdapter(IHTTPAdapter):
     def from_struct(self, struct: Struct) -> Mapping:
         """Override if you need to decouple struct fields from api schema"""
         return self.schema.dump(struct)
-

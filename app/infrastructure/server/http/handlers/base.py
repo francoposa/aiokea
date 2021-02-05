@@ -30,7 +30,10 @@ FILTER_KEY_REGEX = re.compile(r"\[(.*?)\]")
 
 class HTTPHandler:
     def __init__(
-        self, db_client, adapter: BaseHTTPAdapter, id_field: str = None,
+        self,
+        db_client,
+        adapter: BaseHTTPAdapter,
+        id_field: str = None,
     ):
         self.db_client = db_client
         self.adapter = adapter
@@ -84,7 +87,8 @@ class HTTPHandler:
             usecase = await self.db_client.update(db_usecase)
         except DuplicateResourceError as e:
             raise web.HTTPConflict(
-                text=json.dumps({"errors": [e.msg]}), content_type="application/json",
+                text=json.dumps({"errors": [e.msg]}),
+                content_type="application/json",
             )
         response_data = self.adapter.usecase_to_mapping(usecase)
         return web.json_response({"data": response_data})

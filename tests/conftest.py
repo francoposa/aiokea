@@ -68,14 +68,16 @@ def user_post():
 
 @pytest.fixture
 def http_app(
-    aiopg_db, aiopg_user_repo, user_http_adapter,
+    aiopg_db,
+    aiopg_user_repo,
+    user_http_adapter,
 ):
     async def startup_handler(app):
         """Run all initialization tasks.
 
-       These are tasks that should be run after the event loop has been started
-       but before the HTTP server has been started.
-       """
+        These are tasks that should be run after the event loop has been started
+        but before the HTTP server has been started.
+        """
 
         # Users endpoint
         user_handler = AIOHTTPServiceHandler(

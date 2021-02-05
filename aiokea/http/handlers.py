@@ -9,7 +9,6 @@ import aiokea
 from aiokea.abc import IService, Struct, IHTTPAdapter
 from aiokea.errors import DuplicateResourceError
 from aiokea.filters import Filter, EQ, PageNumberPaginationParams, FilterOperators
-from aiokea.http.adapters import BaseMarshmallowHTTPAdapter
 
 
 FILTER_KEY_REGEX = re.compile(r"\[(.*?)\]")
@@ -17,7 +16,9 @@ FILTER_KEY_REGEX = re.compile(r"\[(.*?)\]")
 
 class AIOHTTPServiceHandler:
     def __init__(
-        self, service: IService, adapter: IHTTPAdapter,
+        self,
+        service: IService,
+        adapter: IHTTPAdapter,
     ):
         super().__init__()
         self.service = service
@@ -26,7 +27,7 @@ class AIOHTTPServiceHandler:
     async def get_handler(self, request: web.Request) -> web.Response:
         """GET handler to list resources satisfying query filters"""
         filters: List[Filter] = _query_to_filters(request.query, self.adapter)
-        structs: List[Struct] = await self.service.get_where(filters=filters)
+        structs: List[Struct] = await self.service.where(filters=filters)
         response_data = [self.adapter.from_struct(s) for s in structs]
         return web.json_response({"data": response_data})
 
@@ -49,7 +50,8 @@ class AIOHTTPServiceHandler:
             service_struct = await self.service.create(request_struct)
         except DuplicateResourceError as e:
             raise web.HTTPConflict(
-                text=json.dumps({"errors": [e.msg]}), content_type="application/json",
+                text=json.dumps({"errors": [e.msg]}),
+                content_type="application/json",
             )
         response_data = self.adapter.from_struct(service_struct)
         return web.json_response({"data": response_data})

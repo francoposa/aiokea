@@ -44,23 +44,21 @@ class AIOPGRepo(IRepo):
                 f"No {self.adapter.struct_class.__name__} found with {self.adapter.schema.Meta.id_field} {id}"
             )
 
-    async def get_where(
-        self, filters: Optional[Iterable[Filter]] = None
-    ) -> List[Struct]:
-        where_clause: BinaryExpression = self._where_clause_from_filters(
-            filters
-        ) if filters else None
+    async def where(self, filters: Optional[Iterable[Filter]] = None) -> List[Struct]:
+        where_clause: BinaryExpression = (
+            self._where_clause_from_filters(filters) if filters else None
+        )
         select: Select = self.table.select(whereclause=where_clause)
         async with self.engine.acquire() as conn:
             results: ResultProxy = await conn.execute(select)
             return [await self.adapter.to_struct(result) async for result in results]
 
-    async def get_first_where(
+    async def first(
         self, filters: Optional[Iterable[Filter]] = None
     ) -> Optional[Struct]:
-        where_clause: BinaryExpression = self._where_clause_from_filters(
-            filters
-        ) if filters else None
+        where_clause: BinaryExpression = (
+            self._where_clause_from_filters(filters) if filters else None
+        )
         select: Select = self.table.select(whereclause=where_clause).limit(1)
         async with self.engine.acquire() as conn:
             results: ResultProxy = await conn.execute(select)
@@ -111,10 +109,8 @@ class AIOPGRepo(IRepo):
         _ = await self.get(id=id)
 
         where_clause: BinaryExpression = self._where_clause_from_id(id)
-        delete: Delete = (
-            self.table.delete(whereclause=where_clause).returning(
-                *[column for column in self.table.columns]
-            )
+        delete: Delete = self.table.delete(whereclause=where_clause).returning(
+            *[column for column in self.table.columns]
         )
         async with self.engine.acquire() as conn:
             try:
