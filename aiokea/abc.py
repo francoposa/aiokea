@@ -111,7 +111,7 @@ class IRepo(IService):
     @abstractmethod
     async def get_where(
         self, filters: Optional[Iterable[Filter]] = None
-    ) -> Iterable[Struct]:
+    ) -> List[Struct]:
         pass
 
     @abstractmethod
@@ -147,15 +147,15 @@ class ITransactionalRepo(IRepo):
 
 class IHTTPSchema(ABC):
 
-    @abstractmethod
     @property
-    def fields(self) -> Iterable:
+    @abstractmethod
+    def fields(self) -> List:
         pass
 
 class IHTTPAdapter(ABC):
 
-    @abstractmethod
     @property
+    @abstractmethod
     def schema(self) -> IHTTPSchema:
         pass
 

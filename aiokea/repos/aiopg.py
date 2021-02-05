@@ -1,6 +1,7 @@
 from typing import (
     Any,
     Iterable,
+    List,
     Optional,
     Mapping,
 )
@@ -45,7 +46,7 @@ class AIOPGRepo(IRepo):
 
     async def get_where(
         self, filters: Optional[Iterable[Filter]] = None
-    ) -> Iterable[Struct]:
+    ) -> List[Struct]:
         where_clause: BinaryExpression = self._where_clause_from_filters(
             filters
         ) if filters else None
