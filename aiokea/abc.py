@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Optional, Iterable, List
+from typing import Any, Optional, Iterable, List, Mapping
 
 from aiokea.filters import Filter
 
@@ -143,3 +143,38 @@ class ITransactionalRepo(IRepo):
     Implementations of ITransactionalRepo do not necessarily have to be backed by a database,
     as long as the implementation fulfills the expected atomic-transactional behavior
     """
+
+
+class IHTTPSchema(ABC):
+
+    @abstractmethod
+    @property
+    def fields(self) -> Iterable:
+        pass
+
+class IHTTPAdapter(ABC):
+
+    @abstractmethod
+    @property
+    def schema(self) -> IHTTPSchema:
+        pass
+
+    @abstractmethod
+    def to_struct(self, data: Mapping) -> Struct:
+        """
+
+        :param data:
+        :return:
+        :raises ValidationError:
+        """
+        pass
+
+    @abstractmethod
+    def from_struct(self, struct: Struct) -> Mapping:
+        """
+
+        :param struct:
+        :return:
+        :raises V
+        """
+        pass

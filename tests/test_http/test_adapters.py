@@ -1,6 +1,6 @@
-import marshmallow
 import pytest
 
+from aiokea.errors import ValidationError
 from tests.stubs.user.struct import User
 
 
@@ -11,13 +11,13 @@ def test_load_to_struct_success(user_http_adapter, user_post):
 
 def test_load_to_struct_invalid_type(user_http_adapter, user_post):
     user_post["username"] = 1738
-    with pytest.raises(marshmallow.exceptions.ValidationError):
+    with pytest.raises(ValidationError):
         user_http_adapter.to_struct(user_post)
 
 
 def test_load_to_struct_missing_field(user_http_adapter, user_post):
     del user_post["username"]
-    with pytest.raises(marshmallow.exceptions.ValidationError):
+    with pytest.raises(ValidationError):
         user_http_adapter.to_struct(user_post)
 
 

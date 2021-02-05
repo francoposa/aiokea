@@ -1,9 +1,10 @@
-from abc import ABC
 from typing import Dict, Mapping, Type
 
+import marshmallow
 from marshmallow import Schema
 
-from aiokea.abc import Struct
+from aiokea.abc import Struct, IHTTPAdapter
+from aiokea.errors import ValidationError
 
 
 class BaseMarshmallowHTTPSchema(Schema):
@@ -15,16 +16,24 @@ class BaseMarshmallowHTTPSchema(Schema):
         patchable_fields = []
 
 
-class BaseMarshmallowHTTPAdapter(ABC):
+class BaseMarshmallowHTTPAdapter(IHTTPAdapter):
     def __init__(self, schema: BaseMarshmallowHTTPSchema, struct_class: Type):
-        self.schema = schema
+        self._schema = schema
         self.struct_class: Type = struct_class
 
+    @property
+    def schema(self) -> BaseMarshmallowHTTPSchema:
+        return self._schema
+
     def to_struct(self, data: Mapping) -> Struct:
-        """Override if you need to decouple struct fields from api schema"""
-        struct_data: Dict = self.schema.load(data)
+        try:
+            struct_data: Dict = self.schema.load(data)
+        except marshmallow.exceptions.ValidationError as e:
+            error_list = [{k: v} for k, v in e.messages.items()]
+            raise ValidationError(errors=error_list)
         return self.struct_class(**struct_data)
 
     def from_struct(self, struct: Struct) -> Mapping:
         """Override if you need to decouple struct fields from api schema"""
         return self.schema.dump(struct)
+

@@ -1,6 +1,16 @@
+from typing import Any, List
+
+
 class DuplicateResourceError(Exception):
-    error_msg = "duplicate_resource"
+    msg = "duplicate_resource"
 
 
 class ResourceNotFoundError(Exception):
-    error_msg = "resource_not_found"
+    msg = "resource_not_found"
+
+
+class ValidationError(Exception):
+    msg = "validation_error"
+
+    def __init__(self, errors: List[Any]):
+        self.errors = errors

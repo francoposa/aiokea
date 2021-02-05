@@ -36,39 +36,6 @@ class HTTPHandler:
         self.adapter = adapter
         self.id_field = id_field or "id"
 
-    async def get_handler(self, request: web.Request) -> web.Response:
-        """GET handler to retrieve usecases."""
-        filters: List[Filter] = _query_to_filters(request.query, self.adapter)
-        usecases = await self.db_client.get_where(filters=filters)
-        response_data = [self.adapter.usecase_to_mapping(u) for u in usecases]
-        return web.json_response({"data": response_data})
-
-    async def post_handler(self, request: web.Request) -> web.Response:
-        """POST handler to create an usecase."""
-        try:
-            request_data = await request.json()
-        except Exception:
-            raise web.HTTPBadRequest(
-                text=json.dumps({"errors": ["The supplied JSON is invalid."]})
-            )
-
-        try:
-            request_usecase = self.adapter.mapping_to_usecase(request_data)
-        except marshmallow.exceptions.ValidationError as e:
-            error_list = [{k: v} for k, v in e.messages.items()]
-            raise web.HTTPUnprocessableEntity(
-                text=json.dumps({"errors": error_list}), content_type="application/json"
-            )
-        try:
-            usecase = await self.db_client.create(request_usecase)
-        except DuplicateResourceError as e:
-            raise web.HTTPConflict(
-                text=json.dumps({"errors": [e.error_msg]}),
-                content_type="application/json",
-            )
-        response_data = self.adapter.usecase_to_mapping(usecase)
-        return web.json_response({"data": response_data})
-
     async def patch_handler(self, request: web.Request) -> web.Response:
         """PATCH handler to partially update an usecase."""
         id = request.match_info["id"]
@@ -117,8 +84,7 @@ class HTTPHandler:
             usecase = await self.db_client.update(db_usecase)
         except DuplicateResourceError as e:
             raise web.HTTPConflict(
-                text=json.dumps({"errors": [e.error_msg]}),
-                content_type="application/json",
+                text=json.dumps({"errors": [e.msg]}), content_type="application/json",
             )
         response_data = self.adapter.usecase_to_mapping(usecase)
         return web.json_response({"data": response_data})

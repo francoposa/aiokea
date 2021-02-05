@@ -2,11 +2,11 @@ import json
 import re
 from typing import List, Set
 
-import marshmallow
 from aiohttp import web
 from multidict import MultiMapping
 
-from aiokea.abc import IService, Struct
+import aiokea
+from aiokea.abc import IService, Struct, IHTTPAdapter
 from aiokea.errors import DuplicateResourceError
 from aiokea.filters import Filter, EQ, PageNumberPaginationParams, FilterOperators
 from aiokea.http.adapters import BaseMarshmallowHTTPAdapter
@@ -17,7 +17,7 @@ FILTER_KEY_REGEX = re.compile(r"\[(.*?)\]")
 
 class AIOHTTPServiceHandler:
     def __init__(
-        self, service: IService, adapter: BaseMarshmallowHTTPAdapter,
+        self, service: IService, adapter: IHTTPAdapter,
     ):
         super().__init__()
         self.service = service
@@ -40,25 +40,23 @@ class AIOHTTPServiceHandler:
             )
 
         try:
-            request_usecase = self.adapter.to_struct(request_data)
-        except marshmallow.exceptions.ValidationError as e:
-            error_list = [{k: v} for k, v in e.messages.items()]
+            request_struct = self.adapter.to_struct(request_data)
+        except aiokea.errors.ValidationError as e:
             raise web.HTTPUnprocessableEntity(
-                text=json.dumps({"errors": error_list}), content_type="application/json"
+                text=json.dumps({"errors": e.errors}), content_type="application/json"
             )
         try:
-            usecase = await self.service.create(request_usecase)
+            service_struct = await self.service.create(request_struct)
         except DuplicateResourceError as e:
             raise web.HTTPConflict(
-                text=json.dumps({"errors": [e.error_msg]}),
-                content_type="application/json",
+                text=json.dumps({"errors": [e.msg]}), content_type="application/json",
             )
-        response_data = self.adapter.from_struct(usecase)
+        response_data = self.adapter.from_struct(service_struct)
         return web.json_response({"data": response_data})
 
 
 def _query_to_filters(
-    raw_query_map: MultiMapping, adapter: BaseMarshmallowHTTPAdapter
+    raw_query_map: MultiMapping, adapter: IHTTPAdapter
 ) -> List[Filter]:
     valid_filter_fields: Set[str] = _valid_query_params(adapter)
     query_filters: List[Filter] = []
@@ -85,7 +83,7 @@ def _query_to_filters(
     return query_filters
 
 
-def _valid_query_params(adapter: BaseMarshmallowHTTPAdapter) -> Set[str]:
+def _valid_query_params(adapter: IHTTPAdapter) -> Set[str]:
     valid_query_params = set()
     for field in adapter.schema.fields:
         valid_query_params.add(field)
