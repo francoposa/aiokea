@@ -1,7 +1,7 @@
 from marshmallow import fields
 
 from aiokea.http.adapters import BaseMarshmallowHTTPSchema, BaseMarshmallowHTTPAdapter
-from tests.stubs.user.struct import User
+from tests.stubs.user.entity import User
 
 
 class UserHTTPSchema(BaseMarshmallowHTTPSchema):
@@ -18,4 +18,4 @@ class UserHTTPSchema(BaseMarshmallowHTTPSchema):
 
 class UserHTTPAdapter(BaseMarshmallowHTTPAdapter):
     def __init__(self):
-        super().__init__(schema=UserHTTPSchema(), struct_class=User)
+        super().__init__(schema=UserHTTPSchema(), entity_class=User)

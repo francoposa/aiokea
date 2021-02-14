@@ -9,23 +9,23 @@ from typing import (
 import aiopg.sa
 import psycopg2
 import sqlalchemy as sa
-from aiopg.sa.result import ResultProxy
+from aiopg.sa.result import RowProxy, ResultProxy
 from sqlalchemy.dialects.postgresql import Insert
 from sqlalchemy.sql.elements import BinaryExpression
 from sqlalchemy.sql import and_, Select, Update, Delete
 from sqlalchemy.sql.schema import Column
 
 
-from aiokea.abc import IRepo, Struct
+from aiokea.abc import IRepo, Entity
 from aiokea.errors import DuplicateResourceError, ResourceNotFoundError
 from aiokea.filters import Filter, FilterOperators
-from aiokea.repos.adapters import BaseMarshmallowRepoAdapter
+from aiokea.repos.adapters import BaseMarshmallowSQLAlchemyRepoAdapter
 
 
 class AIOPGRepo(IRepo):
     def __init__(
         self,
-        adapter: BaseMarshmallowRepoAdapter,
+        adapter: BaseMarshmallowSQLAlchemyRepoAdapter,
         engine: aiopg.sa.Engine,
         table: sa.Table,
     ):
@@ -33,44 +33,44 @@ class AIOPGRepo(IRepo):
         self.engine = engine
         self.table = table
 
-    async def get(self, id: Any) -> Struct:
+    async def get(self, id: Any) -> Entity:
         where_clause: BinaryExpression = self._where_clause_from_id(id)
         select: Select = self.table.select(whereclause=where_clause).limit(1)
         async with self.engine.acquire() as conn:
             results: ResultProxy = await conn.execute(select)
             if results.rowcount:
-                return await self.adapter.to_struct(await results.first())
+                return await self.adapter.to_entity(await results.first())
             raise ResourceNotFoundError(
-                f"No {self.adapter.struct_class.__name__} found with {self.adapter.schema.Meta.id_field} {id}"
+                f"No {self.adapter.entity_class.__name__} found with {self.adapter.schema.Meta.id_field} {id}"
             )
 
-    async def where(self, filters: Optional[Iterable[Filter]] = None) -> List[Struct]:
-        where_clause: BinaryExpression = (
+    async def where(self, filters: Optional[Iterable[Filter]] = None) -> List[Entity]:
+        where_clause: Optional[BinaryExpression] = (
             self._where_clause_from_filters(filters) if filters else None
         )
         select: Select = self.table.select(whereclause=where_clause)
         async with self.engine.acquire() as conn:
             results: ResultProxy = await conn.execute(select)
-            return [await self.adapter.to_struct(result) async for result in results]
+            return [await self.adapter.to_entity(result) async for result in results]
 
     async def first(
         self, filters: Optional[Iterable[Filter]] = None
-    ) -> Optional[Struct]:
-        where_clause: BinaryExpression = (
+    ) -> Optional[Entity]:
+        where_clause: Optional[BinaryExpression] = (
             self._where_clause_from_filters(filters) if filters else None
         )
         select: Select = self.table.select(whereclause=where_clause).limit(1)
         async with self.engine.acquire() as conn:
             results: ResultProxy = await conn.execute(select)
             if results.rowcount:
-                return await self.adapter.to_struct(await results.first())
+                return await self.adapter.to_entity(await results.first())
             return None
 
-    async def create(self, struct: Struct) -> Struct:
-        serialized_struct: Mapping = self.adapter.from_struct(struct)
+    async def create(self, entity: Entity) -> Entity:
+        serialized_entity: Mapping = self.adapter.from_entity(entity)
         insert: Insert = (
             self.table.insert()
-            .values(**serialized_struct)
+            .values(**serialized_entity)
             .returning(*[column for column in self.table.columns])
         )
         async with self.engine.acquire() as conn:
@@ -79,31 +79,31 @@ class AIOPGRepo(IRepo):
                 result = await results.fetchone()
             except psycopg2.errors.UniqueViolation as e:
                 raise DuplicateResourceError(e)
-        return await self.adapter.to_struct(result)
+        return await self.adapter.to_entity(result)
 
-    async def update(self, struct: Struct) -> Struct:
-        id = getattr(struct, self.adapter.schema.Meta.id_field)
+    async def update(self, entity: Entity) -> Entity:
+        id = getattr(entity, self.adapter.schema.Meta.id_field)
         # Call get to make sure the resource exists; will throw error if not
         # TODO ^ this is lazy, let's do it in one database call
         _ = await self.get(id=id)
 
-        serialized_struct: Mapping = self.adapter.from_struct(struct)
+        serialized_entity: Mapping = self.adapter.from_entity(entity)
         where_clause: BinaryExpression = self._where_clause_from_id(id)
         update: Update = (
             self.table.update(whereclause=where_clause)
-            .values(**serialized_struct)
+            .values(**serialized_entity)
             .returning(*[column for column in self.table.columns])
         )
         async with self.engine.acquire() as conn:
             try:
                 results: ResultProxy = await conn.execute(update)
-                result = await results.fetchone()
+                result: RowProxy = await results.fetchone()
             except psycopg2.errors.UniqueViolation as e:
                 # TODO possibly raise a more descriptive error
                 raise DuplicateResourceError(e)
-        return await self.adapter.to_struct(result)
+        return await self.adapter.to_entity(result)
 
-    async def delete(self, id: Any) -> Struct:
+    async def delete(self, id: Any) -> Entity:
         # Call get to make sure the resource exists; will throw error if not
         # TODO ^ this is lazy, let's do it in one database call
         _ = await self.get(id=id)
@@ -119,7 +119,7 @@ class AIOPGRepo(IRepo):
             except psycopg2.errors.UniqueViolation as e:
                 # TODO possibly raise a more descriptive error
                 raise DuplicateResourceError(e)
-        return await self.adapter.to_struct(result)
+        return await self.adapter.to_entity(result)
 
     def _where_clause_from_id(self, id: Any) -> BinaryExpression:
         id_filter = Filter(self.adapter.schema.Meta.id_field, FilterOperators.EQ, id)

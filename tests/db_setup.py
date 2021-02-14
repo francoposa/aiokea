@@ -1,4 +1,4 @@
-from tests.stubs.user.struct import User
+from tests.stubs.user.entity import User
 
 stub_users = [
     User(username="domtoretto", email="americanmuscle@fastnfurious.com"),

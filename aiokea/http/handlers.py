@@ -6,7 +6,7 @@ from aiohttp import web
 from multidict import MultiMapping
 
 import aiokea
-from aiokea.abc import IService, Struct, IHTTPAdapter
+from aiokea.abc import IService, Entity, IHTTPAdapter
 from aiokea.errors import DuplicateResourceError
 from aiokea.filters import Filter, EQ, PageNumberPaginationParams, FilterOperators
 
@@ -27,8 +27,8 @@ class AIOHTTPServiceHandler:
     async def get_handler(self, request: web.Request) -> web.Response:
         """GET handler to list resources satisfying query filters"""
         filters: List[Filter] = _query_to_filters(request.query, self.adapter)
-        structs: List[Struct] = await self.service.where(filters=filters)
-        response_data = [self.adapter.from_struct(s) for s in structs]
+        entities: List[Entity] = await self.service.where(filters=filters)
+        response_data = [self.adapter.from_entity(s) for s in entities]
         return web.json_response({"data": response_data})
 
     async def post_handler(self, request: web.Request) -> web.Response:
@@ -41,19 +41,19 @@ class AIOHTTPServiceHandler:
             )
 
         try:
-            request_struct = self.adapter.to_struct(request_data)
+            request_entity = self.adapter.to_entity(request_data)
         except aiokea.errors.ValidationError as e:
             raise web.HTTPUnprocessableEntity(
                 text=json.dumps({"errors": e.errors}), content_type="application/json"
             )
         try:
-            service_struct = await self.service.create(request_struct)
+            service_entity = await self.service.create(request_entity)
         except DuplicateResourceError as e:
             raise web.HTTPConflict(
                 text=json.dumps({"errors": [e.msg]}),
                 content_type="application/json",
             )
-        response_data = self.adapter.from_struct(service_struct)
+        response_data = self.adapter.from_entity(service_entity)
         return web.json_response({"data": response_data})
 
 

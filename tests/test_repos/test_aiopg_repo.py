@@ -4,7 +4,7 @@ import pytest
 
 from aiokea.errors import DuplicateResourceError, ResourceNotFoundError
 from aiokea.filters import Filter, EQ, NE
-from tests.stubs.user.struct import User, stub_users
+from tests.stubs.user.entity import User, stub_users
 
 
 async def test_get(aiopg_db, aiopg_user_repo):

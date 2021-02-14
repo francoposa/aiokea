@@ -1,5 +1,5 @@
 from aiokea.http.handlers import _valid_query_params
-from tests.stubs.user.struct import stub_users
+from tests.stubs.user.entity import stub_users
 
 
 def test_valid_query_params(user_http_adapter):

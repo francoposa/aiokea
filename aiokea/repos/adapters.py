@@ -5,7 +5,7 @@ from typing import Mapping, MutableMapping, Type
 
 from marshmallow import Schema
 
-from aiokea.abc import Struct
+from aiokea.abc import Entity
 
 
 class BaseMarshmallowRepoSchema(Schema):
@@ -17,59 +17,59 @@ class BaseMarshmallowRepoSchema(Schema):
         repo_generated_fields = ["created_at", "updated_at"]
 
 
-class BaseMarshmallowRepoAdapter(ABC):
+class BaseMarshmallowSQLAlchemyRepoAdapter(ABC):
     """
-    Adapter utilizing Marshmallow Schemas to marshall Struct instances to and from
-    statements created with the SQLAlchemy Table API.
+    Adapter utilizing Marshmallow Schemas to marshall Entity instances
+    to and from queries created with the SQLAlchemy Table API.
     """
 
-    def __init__(self, schema: BaseMarshmallowRepoSchema, struct_class: Type):
+    def __init__(self, schema: BaseMarshmallowRepoSchema, entity_class: Type):
         self.schema = schema
-        self.struct_class: Type = struct_class
+        self.entity_class: Type = entity_class
 
-    async def to_struct(self, data: Mapping) -> Struct:
+    async def to_entity(self, data: Mapping) -> Entity:
         """
-        Load repo query result data into Struct
+        Load repo query result data into Entity
 
-        Override if you need to decouple struct fields from db schema
+        Override if you need to decouple entity fields from db schema
 
         Not actually async, but needs to be marked async for use in
         async iterators and other async repo patterns
         """
-        return self.struct_class(**data)
+        return self.entity_class(**data)
 
-    def from_struct(self, struct: Struct) -> Mapping:
+    def from_entity(self, entity: Entity) -> Mapping:
         """
-        Dump Struct into Mapping which can be unpacked into the `values` clause
+        Dump Entity into Mapping which can be unpacked into the `values` clause
         on the `create` or `update` statements created with the SQLAlchemy Table API
 
-        Override if you need to decouple struct fields from db schema
+        Override if you need to decouple entity fields from db schema
 
-        You will likely want to keep the call to _from_struct in order to
+        You will likely want to keep the call to _from_entity in order to
         take advantage of the generalized marshalling functionality it provides.
         """
-        struct_data = vars(struct)
-        return self._from_struct(struct_data)
+        entity_data = vars(entity)
+        return self._from_entity(entity_data)
 
-    def _from_struct(self, struct_data: Mapping) -> Mapping:
-        struct_data = self._strip_repo_generated_fields(struct_data)
-        struct_data = self._dump_datetime_fields(struct_data)
-        return struct_data
+    def _from_entity(self, entity_data: Mapping) -> Mapping:
+        entity_data = self._strip_repo_generated_fields(entity_data)
+        entity_data = self._dump_datetime_fields(entity_data)
+        return entity_data
 
-    def _strip_repo_generated_fields(self, struct_data: Mapping) -> Mapping:
+    def _strip_repo_generated_fields(self, entity_data: Mapping) -> Mapping:
         for db_generated_field in self.schema.Meta.repo_generated_fields:
             if (
-                db_generated_field in struct_data
-                and struct_data.get(db_generated_field) is None
+                db_generated_field in entity_data
+                and entity_data.get(db_generated_field) is None
             ):
-                # Inserting value None into a non-nullable Postgres field will result
-                # in a `psycopg2.IntegrityError: null value in column violates not-null
-                # constraint`. Delete the value from the dict instead
-                del struct_data[db_generated_field]
-        return struct_data
+                # Inserting value None into a non-nullable field will result in error
+                # Even it is nullable, we want to let the database generate the fields
+                # Delete these values from the dict instead
+                del entity_data[db_generated_field]
+        return entity_data
 
-    def _dump_datetime_fields(self, struct_data: Mapping) -> Mapping:
-        for k, v in struct_data.items():
+    def _dump_datetime_fields(self, entity_data: Mapping) -> Mapping:
+        for k, v in entity_data.items():
             if isinstance(v, datetime.datetime):
-                struct_data[k]: str = v.isoformat()
-        return struct_data
+                entity_data[k]: str = v.isoformat()
+        return entity_data

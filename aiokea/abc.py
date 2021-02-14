@@ -4,7 +4,7 @@ from typing import Any, Optional, Iterable, List, Mapping
 from aiokea.filters import Filter
 
 
-class Struct(ABC):
+class Entity(ABC):
     pass
 
 
@@ -40,29 +40,29 @@ class IService(ABC):
     """
 
     @abstractmethod
-    async def get(self, id: Any) -> Optional[Struct]:
+    async def get(self, id: Any) -> Optional[Entity]:
         pass
 
     @abstractmethod
-    async def where(self, filters: Optional[Iterable[Filter]] = None) -> List[Struct]:
+    async def where(self, filters: Optional[Iterable[Filter]] = None) -> List[Entity]:
         pass
 
     @abstractmethod
     async def first(
         self, filters: Optional[Iterable[Filter]] = None
-    ) -> Optional[Struct]:
+    ) -> Optional[Entity]:
         pass
 
     @abstractmethod
-    async def create(self, struct: Struct) -> Struct:
+    async def create(self, entity: Entity) -> Entity:
         pass
 
     @abstractmethod
-    async def update(self, struct: Struct) -> Struct:
+    async def update(self, entity: Entity) -> Entity:
         pass
 
     @abstractmethod
-    async def delete(self, id: Any) -> Struct:
+    async def delete(self, id: Any) -> Entity:
         pass
 
 
@@ -103,29 +103,29 @@ class IRepo(IService):
     """
 
     @abstractmethod
-    async def get(self, id: Any) -> Optional[Struct]:
+    async def get(self, id: Any) -> Optional[Entity]:
         pass
 
     @abstractmethod
-    async def where(self, filters: Optional[Iterable[Filter]] = None) -> List[Struct]:
+    async def where(self, filters: Optional[Iterable[Filter]] = None) -> List[Entity]:
         pass
 
     @abstractmethod
     async def first(
         self, filters: Optional[Iterable[Filter]] = None
-    ) -> Optional[Struct]:
+    ) -> Optional[Entity]:
         pass
 
     @abstractmethod
-    async def create(self, struct: Struct) -> Struct:
+    async def create(self, entity: Entity) -> Entity:
         pass
 
     @abstractmethod
-    async def update(self, struct: Struct) -> Struct:
+    async def update(self, entity: Entity) -> Entity:
         pass
 
     @abstractmethod
-    async def delete(self, id: Any) -> Struct:
+    async def delete(self, id: Any) -> Entity:
         pass
 
 
@@ -155,7 +155,7 @@ class IHTTPAdapter(ABC):
         pass
 
     @abstractmethod
-    def to_struct(self, data: Mapping) -> Struct:
+    def to_entity(self, data: Mapping) -> Entity:
         """
 
         :param data:
@@ -165,11 +165,11 @@ class IHTTPAdapter(ABC):
         pass
 
     @abstractmethod
-    def from_struct(self, struct: Struct) -> Mapping:
+    def from_entity(self, entity: Entity) -> Mapping:
         """
 
-        :param struct:
+        :param entity:
         :return:
-        :raises V
+        :raises ValidationError
         """
         pass

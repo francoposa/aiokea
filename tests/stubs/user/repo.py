@@ -2,7 +2,7 @@ import sqlalchemy as sa
 
 from aiokea.repos.aiopg import AIOPGRepo
 from tests.stubs.user.repo_adapter import UserRepoAdapter
-from tests.stubs.user.struct import User, stub_users
+from tests.stubs.user.entity import User, stub_users
 
 METADATA = sa.MetaData()
 
