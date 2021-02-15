@@ -2,27 +2,30 @@ from typing import Dict, List, Mapping, Type
 
 import marshmallow
 from marshmallow import Schema
-
 from aiokea.abc import Entity, IHTTPAdapter, IHTTPSchema
 from aiokea.errors import ValidationError
 
 
-class BaseMarshmallowHTTPSchema(Schema):
-    class Meta:
-        ordered = True
-        strict = True
+MarshmallowSchema = Schema
+# MarshmallowSchema = TypeVar("MarshmallowSchema", Schema)
 
-        id_field = "id"
-        patchable_fields: List[str] = []
+
+# class BaseMarshmallowHTTPSchema(Schema, IHTTPSchema, metaclass=SchemaMeta):
+#     class Meta:
+#         ordered = True
+#         strict = True
+
+#         id_field = "id"
+#         patchable_fields: List[str] = []
 
 
 class BaseMarshmallowHTTPAdapter(IHTTPAdapter):
-    def __init__(self, schema: BaseMarshmallowHTTPSchema, entity_class: Type):
-        self._schema = schema
+    def __init__(self, schema: MarshmallowSchema, entity_class: Type):
+        self._schema: MarshmallowSchema = schema
         self.entity_class: Type = entity_class
 
     @property
-    def schema(self) -> BaseMarshmallowHTTPSchema:
+    def schema(self) -> MarshmallowSchema:
         return self._schema
 
     def to_entity(self, data: Mapping) -> Entity:

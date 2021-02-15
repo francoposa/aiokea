@@ -1,10 +1,10 @@
 from marshmallow import fields
 
-from aiokea.http.adapters import BaseMarshmallowHTTPSchema, BaseMarshmallowHTTPAdapter
+from aiokea.http.adapters import MarshmallowSchema, BaseMarshmallowHTTPAdapter
 from tests.stubs.user.entity import User
 
 
-class UserHTTPSchema(BaseMarshmallowHTTPSchema):
+class UserHTTPSchema(MarshmallowSchema):
     class Meta:
         patchable_fields = ["username", "email", "is_enabled"]
 
