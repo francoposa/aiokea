@@ -2,7 +2,7 @@ from typing import Dict, List, Mapping, Type
 
 import marshmallow
 from marshmallow import Schema
-from aiokea.abc import Entity, IHTTPAdapter, IHTTPSchema
+from aiokea.abc import Entity, IHTTPAdapter
 from aiokea.errors import ValidationError
 
 
@@ -25,12 +25,12 @@ class BaseMarshmallowHTTPAdapter(IHTTPAdapter):
         self.entity_class: Type = entity_class
 
     @property
-    def schema(self) -> MarshmallowSchema:
-        return self._schema
+    def fields(self) -> List[str]:
+        return list(self._schema.fields.keys())
 
     def to_entity(self, data: Mapping) -> Entity:
         try:
-            entity_data: Dict = self.schema.load(data)
+            entity_data: Dict = self._schema.load(data)
         except marshmallow.exceptions.ValidationError as e:
             error_list = [{k: v} for k, v in e.messages.items()]
             raise ValidationError(errors=error_list)
@@ -38,4 +38,4 @@ class BaseMarshmallowHTTPAdapter(IHTTPAdapter):
 
     def from_entity(self, entity: Entity) -> Mapping:
         """Override if you need to decouple entity fields from api schema"""
-        return self.schema.dump(entity)
+        return self._schema.dump(entity)

@@ -87,7 +87,7 @@ def _query_to_filters(
 
 def _valid_query_params(adapter: IHTTPAdapter) -> Set[str]:
     valid_query_params = set()
-    for field in adapter.schema.fields:
+    for field in adapter.fields:
         valid_query_params.add(field)
     valid_query_params.update(PageNumberPaginationParams.values)
     return valid_query_params

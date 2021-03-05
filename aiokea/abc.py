@@ -141,17 +141,10 @@ class ITransactionalRepo(IRepo):
     """
 
 
-class IHTTPSchema(ABC):
-    @property
-    @abstractmethod
-    def fields(self) -> List:
-        pass
-
-
 class IHTTPAdapter(ABC):
     @property
     @abstractmethod
-    def schema(self) -> IHTTPSchema:
+    def fields(self) -> List[str]:
         pass
 
     @abstractmethod
